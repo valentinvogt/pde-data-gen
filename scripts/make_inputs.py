@@ -1,14 +1,14 @@
 import numpy as np
-import importlib
-from numpy.random import normal, uniform, randint
+from numpy.random import uniform, randint
 import os
-import sys
-import argparse
+import json
+import hydra
+from omegaconf import DictConfig, OmegaConf
 
 from dotenv import load_dotenv
 from uuid import uuid4
 import pandas as pd
-from typing import List, Dict
+from typing import List, Dict, Any
 from itertools import product
 from src.create_netcdf_input import create_input_file
 from src.setup_helpers import (
@@ -29,14 +29,6 @@ from src.initial_conditions import (
 from src.dataset import Dataset, create_metadata_file
 
 print_filenames = False
-
-
-def load_config(module_file: str):
-    module_name = module_file.removesuffix(".py")
-    try:
-        return importlib.import_module(module_name)
-    except ModuleNotFoundError:
-        raise ImportError(f"Config module '{module_name}' not found.")
 
 
 def run_wrapper(
@@ -201,16 +193,16 @@ def ball_sampling(
         )
 
 
-def parameters_from_grid(config) -> List[Dict[str, float]]:
-    grid_mode = config["grid_mode"]
-    grid_config = config["grid_config"]
+def parameters_from_grid(cfg: DictConfig) -> List[Dict[str, float]]:
+    grid_mode = cfg.grid_mode
+    grid_params = cfg.grid_params
 
     if grid_mode == "absolute":
         param_ranges = [
-            grid_config["A"],
-            grid_config["B"],
-            grid_config["Du"],
-            grid_config["Dv"],
+            grid_params.A,
+            grid_params.B,
+            grid_params.Du,
+            grid_params.Dv,
         ]
         return [
             {"A": A, "B": B, "Du": Du, "Dv": Dv}
@@ -218,10 +210,10 @@ def parameters_from_grid(config) -> List[Dict[str, float]]:
         ]
     elif grid_mode == "relative":
         params = []
-        for A in grid_config["A"]:
-            for B_over_A in grid_config["B_over_A"]:
-                for Du in grid_config["Du"]:
-                    for Dv_over_Du in grid_config["Dv_over_Du"]:
+        for A in grid_params.A:
+            for B_over_A in grid_params.B_over_A:
+                for Du in grid_params.Du:
+                    for Dv_over_Du in grid_params.Dv_over_Du:
                         B = A * B_over_A
                         Dv = Du * Dv_over_Du
                         params.append({"A": A, "B": B, "Du": Du, "Dv": Dv})
@@ -236,36 +228,44 @@ def parameters_from_df(df_path: str) -> pd.DataFrame:
     return df.to_dict(orient="records")
 
 
-def main():
+@hydra.main(version_base=None, config_path="../conf", config_name="config")
+def main(cfg: DictConfig):
     load_dotenv()
-    config = CONFIG
-    model = config["model"]
-    dataset_id = config["dataset_id"]
-    dataset_type = config["dataset_type"]
-    center_definition = config["center_definition"]
+    
+    # Extract configuration
+    model = cfg.model
+    dataset_id = cfg.dataset_id
+    print(cfg.dataset_id)
+    dataset_type = cfg.dataset_type
+    center_definition = cfg.center_definition
+    
+    # Set up output directories
     data_dir = os.getenv("DATA_DIR")
     output_dir = os.path.join(data_dir, model, dataset_id)
     os.makedirs(output_dir, exist_ok=True)
-    if "seed" in config.keys():
-        seed = config["seed"]
-    else:
-        seed = None
-
+    
+    # Save configuration for reference
     with open(os.path.join(output_dir, "_config.json"), "w") as f:
-        f.write(str(config))
-
-    sim_params = SimParams(**config["sim_params"])
-    initial_conditions = [ic_from_dict(ic) for ic in config["initial_conditions"]]
-
+        json.dump(OmegaConf.to_container(cfg, resolve=True), f, indent=2)
+    
+    # Convert configuration to appropriate objects
+    sim_params = SimParams(**cfg.sim_params)
+    initial_conditions = [ic_from_dict(dict(ic)) for ic in cfg.initial_conditions]
+    
+    # Generate parameter grid based on configuration
     if center_definition == "from_grid":
-        param_grid = parameters_from_grid(config)
+        param_grid = parameters_from_grid(cfg)
     elif center_definition == "from_df":
-        param_grid = parameters_from_df(config["df_path"])
+        if cfg.df_path is None:
+            raise ValueError("df_path must be specified when center_definition is from_df")
+        param_grid = parameters_from_df(cfg.df_path)
     else:
         raise ValueError(f"Invalid center definition: {center_definition}")
-
-    dataset_file = create_metadata_file(output_dir, config)
+    
+    # Create metadata for this dataset
+    dataset_file = create_metadata_file(output_dir, OmegaConf.to_container(cfg, resolve=True))
     print(f"Created dataset file: {dataset_file}")
+    
     dataset_info = DatasetInfo(
         model=model,
         type=dataset_type,
@@ -273,12 +273,14 @@ def main():
         file=dataset_file,
         output_dir=output_dir,
     )
-
+    
+    # dataset sampling strategy based on configuration
     if dataset_type == "ball":
-        sampling_std = ModelParams(**config["sampling_std"])
+        sampling_std = ModelParams(**cfg.sampling_std)
         centers = [ModelParams(**center) for center in param_grid]
-        num_samples_per_point = config["num_samples_per_point"]
-        num_samples_per_ic = config["num_samples_per_ic"]
+        num_samples_per_point = cfg.num_samples_per_point
+        num_samples_per_ic = cfg.num_samples_per_ic
+        
         ball_sampling(
             centers,
             sim_params,
@@ -302,19 +304,10 @@ def main():
                     ic,
                     dataset_info,
                     run_id=str(uuid4()),
-                    random_seed=seed,
                 )
     else:
-        raise ValueError(f"Invalid Dataset type: {dataset_type}")
+        raise ValueError(f"Invalid run_type: {dataset_type}")
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "--config_file",
-        type=str,
-        default="config.py",
-    )
-    args = parser.parse_args()
-    CONFIG = load_config(args.config_file).CONFIG
     main()

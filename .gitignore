@@ -8,4 +8,5 @@ build
 .DS_Store
 analysis/out
 out/
+outputs/
 *.egg-info

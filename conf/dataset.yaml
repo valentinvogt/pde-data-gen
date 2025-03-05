@@ -1,0 +1,37 @@
+# Dataset generation configuration
+defaults:
+  - config
+
+# Sample dataset configuration for multiple models and parameter spaces
+run_id: dataset_run
+run_type: ball
+center_definition: from_df
+df_path: data/varied_points.csv
+
+# Simulation parameters for higher resolution
+sim_params:
+  Nx: 256
+  dx: 0.5
+  Nt: 200000
+  dt: 0.005
+  n_snapshots: 200
+
+# Multiple initial conditions to test different patterns
+initial_conditions:
+  - type: normal
+    sigma_u: 0.1
+    sigma_v: 0.1
+  - type: point_sources
+    density: 0.05
+  - type: hex_pattern
+    amplitude: 0.1
+    wavelength: 10
+
+# Sampling parameters
+sampling_std:
+  A: 0.05
+  B: 0.05
+  Du: 0.05
+  Dv: 0.05
+num_samples_per_point: 5
+num_samples_per_ic: 2
