@@ -1,0 +1,11 @@
+.vscode
+.idea
+.cursor
+
+__pycache__
+build
+
+.DS_Store
+analysis/out
+out/
+*.egg-info
