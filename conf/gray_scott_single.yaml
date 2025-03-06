@@ -1,10 +1,11 @@
 # Gray-Scott model for single point
 defaults:
   - config
+  - _self_
 
 model: gray_scott
-run_id: gs_single
-run_type: one_trajectory
+dataset_id: gs_single
+dataset_type: one_trajectory
 center_definition: from_grid
 grid_mode: absolute
 grid_params:

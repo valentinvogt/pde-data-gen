@@ -235,10 +235,9 @@ def main(cfg: DictConfig):
     # Extract configuration
     model = cfg.model
     dataset_id = cfg.dataset_id
-    print(cfg.dataset_id)
     dataset_type = cfg.dataset_type
     center_definition = cfg.center_definition
-    
+    print(cfg)
     # Set up output directories
     data_dir = os.getenv("DATA_DIR")
     output_dir = os.path.join(data_dir, model, dataset_id)
