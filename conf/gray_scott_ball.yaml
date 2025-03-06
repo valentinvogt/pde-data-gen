@@ -7,6 +7,8 @@ model: gray_scott
 dataset_id: gs_ball
 dataset_type: ball
 center_definition: from_grid
+location: work # work or scratch
+
 grid_mode: relative
 grid_params:
   A: [0.035, 0.037, 0.039]

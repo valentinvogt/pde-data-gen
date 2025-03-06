@@ -8,7 +8,6 @@ import plotly.graph_objects as go
 from typing import Tuple
 from dotenv import load_dotenv
 import os
-import glob
 import pandas as pd
 import json
 from functools import partial
@@ -51,11 +50,14 @@ class Dataset:
         return data
 
 
-def get_dataset(model, ds_id) -> Tuple[Dataset, str]:
+def get_dataset(location, model, ds_id) -> Tuple[Dataset, str]:
     load_dotenv()
-    data_dir = os.getenv("DATA_DIR")
-    output_dir = os.getenv("OUT_DIR")
-    ds = Dataset(data_dir, model, ds_id)
+    if location == "work":
+        data_dir = os.getenv("WORK_DIR")
+    else:
+        data_dir = os.getenv("SCRATCH_DIR")
+    output_dir = os.path.join(data_dir, "out")
+    ds = Dataset(os.path.join(data_dir, "data"), model, ds_id)
     return ds, output_dir
 
 

@@ -8,7 +8,7 @@ from omegaconf import DictConfig, OmegaConf
 from dotenv import load_dotenv
 from uuid import uuid4
 import pandas as pd
-from typing import List, Dict, Any
+from typing import List, Dict
 from itertools import product
 from src.create_netcdf_input import create_input_file
 from src.setup_helpers import (
@@ -238,9 +238,13 @@ def main(cfg: DictConfig):
     dataset_type = cfg.dataset_type
     center_definition = cfg.center_definition
     print(f"Creating a {model} dataset with ID {dataset_id}")
+    
     # Set up output directories
-    data_dir = os.getenv("DATA_DIR")
-    output_dir = os.path.join(data_dir, model, dataset_id)
+    if cfg.location == "work":
+        data_dir = os.getenv("WORK_DIR")
+    else:
+        data_dir = os.getenv("SCRATCH_DIR")
+    output_dir = os.path.join(data_dir, "data", model, dataset_id)
     os.makedirs(output_dir, exist_ok=True)
     
     # Save configuration for reference
