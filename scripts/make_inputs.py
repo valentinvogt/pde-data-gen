@@ -237,7 +237,7 @@ def main(cfg: DictConfig):
     dataset_id = cfg.dataset_id
     dataset_type = cfg.dataset_type
     center_definition = cfg.center_definition
-    print(cfg)
+    print(f"Creating a {model} dataset with ID {dataset_id}")
     # Set up output directories
     data_dir = os.getenv("DATA_DIR")
     output_dir = os.path.join(data_dir, model, dataset_id)

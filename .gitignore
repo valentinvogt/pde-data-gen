@@ -10,3 +10,6 @@ analysis/out
 out/
 outputs/
 *.egg-info
+
+*.err
+*.out

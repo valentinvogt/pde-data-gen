@@ -22,39 +22,30 @@ DATAPATH="/cluster/scratch/vogtva/data"
 
 # ADAPT THESE
 model="bruss"
-run_id="test"
+dataset_id="phase_transition2"
 
-run_dir="$DATAPATH/$model/$run_id"
-echo $run_dir
+work_dir="$DATAPATH/$model/$dataset_id"
+echo $work_dir
 # Check if we're using the consolidated file approach
-if [[ -f "$run_dir/_dataset.nc" ]]; then
+if [[ -f "$work_dir/_dataset.nc" ]]; then
     echo "Using consolidated output approach"
     
-    # Process individual input files but track their outputs for later consolidation
-    output_files=()
-    
-    for file in "$run_dir"/*.nc; do
+    for file in "$work_dir"/*.nc; do
         # Skip files that aren't input files
         if [[ "$file" == *_output.nc || "$file" == *_dataset.nc ]]; then
             continue
         fi
         
-        echo "Processing $file"
+        # echo "Processing $file"
         build/run_from_netcdf "$file" 1
-        
-        # Add the output file to our list
-        output_file="${file%.nc}_output.nc"
-        if [[ -f "$output_file" ]]; then
-            output_files+=("$output_file")
-        fi
     done
-    python scripts/consolidate_outputs.py $run_dir/_dataset.nc
+    python scripts/consolidate_outputs.py $work_dir/_dataset.nc
     
 else
     # Original approach - process each file individually
     echo "Using original individual files approach"
     
-    for file in "$run_dir"/*.nc; do
+    for file in "$work_dir"/*.nc; do
         # Skip output files
         if [[ "$file" == *_output.nc ]]; then
             continue
