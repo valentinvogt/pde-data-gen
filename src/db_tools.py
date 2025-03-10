@@ -80,12 +80,9 @@ def filter_dataset(dataset: Dataset, df) -> Dataset:
     return new_dataset
 
 
-def get_dataset(location, model, ds_id) -> Tuple[Dataset, str]:
+def get_dataset(model, ds_id, directory_var="WORK_DIR") -> Tuple[Dataset, str]:
     load_dotenv()
-    if location == "work":
-        data_dir = os.getenv("WORK_DIR")
-    else:
-        data_dir = os.getenv("SCRATCH_DIR")
+    data_dir = os.getenv(directory_var)
     output_dir = os.path.join(data_dir, "out")
     ds = Dataset(os.path.join(data_dir, "data"), model, ds_id)
     return ds, output_dir
@@ -106,154 +103,19 @@ def expand_json_column(df, column, short_name=None, all_fields=False):
     return df
 
 
-def delete_run(dataset: Dataset, indices, delete_files: bool = False) -> Dataset:
-    """
-    Delete a run from the dataset based on its run_id.
-    
-    Args:
-        dataset: The Dataset object.
-        run_id: The unique identifier for the run to delete.
-        delete_files: If True, also delete the associated files on disk.
-        
-    Returns:
-        The updated Dataset object with the run removed.
-    """
-    df = dataset.df
-    
-    # Get the row data for file deletion if needed
-    if delete_files:
-        rows_to_delete = df.loc[indices]
-        for _, row in rows_to_delete.iterrows():
-            filename = row["filename"]
-            try:
-                if os.path.exists(filename):
-                    os.remove(filename)
-                    print(f"Deleted output file: {filename}")
-                
-                # Try to remove associated input files
-                json_file = filename.replace("_output.nc", ".json")
-                if os.path.exists(json_file):
-                    os.remove(json_file)
-                    print(f"Deleted JSON file: {json_file}")
-                
-                input_file = filename.replace("_output.nc", ".nc")
-                if os.path.exists(input_file):
-                    os.remove(input_file)
-                    print(f"Deleted input file: {input_file}")
-            except Exception as e:
-                print(f"Error deleting files for run {row.idx}: {str(e)}")
-    
-    # Remove the run from the NetCDF file
-    # Note: We can't actually delete data from a NetCDF file; the best we can do
-    # is create a new dataset without the deleted runs
-    new_dataset_file = dataset.ds_file + ".tmp"
-    run_count = len(dataset.dataset.dimensions['run'])
-    
-    # Create a new file with the same structure but without the deleted run
-    with nc.Dataset(new_dataset_file, 'w') as new_root:
-        # Copy dimensions
-        for dim_name, dim in dataset.dataset.dimensions.items():
-            if dim_name == 'run':
-                new_root.createDimension('run', run_count - len(indices))
-            else:
-                new_root.createDimension(dim_name, len(dim) if not dim.isunlimited() else None)
-        
-        # Copy variables
-        for var_name, var in dataset.dataset.variables.items():
-            # Create the variable in the new file
-            new_var = new_root.createVariable(
-                var_name, 
-                var.datatype, 
-                var.dimensions, 
-                zlib=True if hasattr(var, 'zlib') else False
-            )
-            
-            # Copy variable attributes
-            for attr_name in var.ncattrs():
-                new_var.setncattr(attr_name, var.getncattr(attr_name))
-            
-            # Copy data for non-run dimension variables
-            if 'run' not in var.dimensions:
-                new_var[:] = var[:]
-            else:
-                # For run-dimensioned variables, copy all runs except the deleted ones
-                # Create a mask of runs to keep
-                keep_mask = np.ones(run_count, dtype=bool)
-                for idx in indices:
-                    keep_mask[idx] = False
-                
-                # Handle special case for the 'data' variable which has multiple dimensions
-                if var_name == 'data':
-                    # Copy data for all dimensions except the deleted run indices
-                    if 'data' in dataset.dataset.variables:
-                        # Get valid indices (runs we want to keep)
-                        valid_indices = np.where(keep_mask)[0]
-                        
-                        # Copy data for each valid run index
-                        for new_idx, old_idx in enumerate(valid_indices):
-                            try:
-                                # Copy all snapshots for this run
-                                if len(var.dimensions) == 4:  # run, snapshot, x, y dimensions
-                                    new_var[new_idx, :, :, :] = var[old_idx, :, :, :]
-                                else:
-                                    # Handle other dimension structures if needed
-                                    new_var[new_idx, :] = var[old_idx, :]
-                            except Exception as e:
-                                print(f"Error copying data for run {old_idx}: {str(e)}")
-                else:
-                    # For other run-dimensioned variables, filter out the deleted runs
-                    valid_indices = np.where(keep_mask)[0]
-                    for new_idx, old_idx in enumerate(valid_indices):
-                        try:
-                            new_var[new_idx] = var[old_idx]
-                        except Exception as e:
-                            print(f"Error copying variable {var_name} for run {old_idx}: {str(e)}")
-        
-        # Copy global attributes
-        for attr_name in dataset.dataset.ncattrs():
-            new_root.setncattr(attr_name, dataset.dataset.getncattr(attr_name))
-    
-    # Close the current dataset
-    dataset.dataset.close()
-    
-    # Replace the old file with the new one
-    os.replace(new_dataset_file, dataset.ds_file)
-    
-    # Reopen the dataset and refresh the dataframe
-    dataset.dataset = nc.Dataset(dataset.ds_file, "a")
-    dataset.df = df_from_nc(dataset.dataset)
-    dataset.df["filename"] = dataset.df["output_file"]
-    dataset.df["idx"] = dataset.df.index
-    
-    print(f"Successfully deleted run '{run_id}' from dataset")
-    return dataset
-
-
-
 ##############################################
 #         Tools for working with dfs         #
 ##############################################
 
 
-def filter_df(df, A=None, B=None, Du=None, Dv=None):
+def filter_df(df, **kwargs):
     """
-    Filter by the provided parameters.
+    Filter a DataFrame based on multiple conditions.
     """
-    filter_criteria = {}
-    if A is not None:
-        filter_criteria["A"] = A
-    if B is not None:
-        filter_criteria["B"] = B
-    if Du is not None:
-        filter_criteria["Du"] = Du
-    if Dv is not None:
-        filter_criteria["Dv"] = Dv
-
-    # Filter the dataframe based on provided parameters
-    filtered_df = df
-    for key, value in filter_criteria.items():
-        filtered_df = filtered_df[filtered_df[key] == value]
-    return filtered_df
+    mask = np.ones(len(df), dtype=bool)
+    for key, value in kwargs.items():
+        mask &= df[key] == value
+    return df[mask]
 
 
 def compute_metrics(row, data, start_frame, end_frame=-1):
@@ -339,7 +201,7 @@ def plot(data, global_min, global_max):
     fig, axes = plt.subplots(1, 2, figsize=(12, 6), gridspec_kw={"wspace": 0.4})
     ims = []
     for coupled_idx, ax in enumerate(axes):
-        matrix = data[0, 0, :, 0::2]
+        matrix = data[0, :, 0::2]
         matrix /= np.max(matrix)
         im = ax.imshow(matrix, cmap="viridis", aspect="equal", vmin=0, vmax=1)
         ax.set_title(f"Snapshot 1, {'u' if coupled_idx == 0 else 'v'}")
@@ -349,7 +211,7 @@ def plot(data, global_min, global_max):
 
 def animate(snapshot, data, ims, axes):
     for coupled_idx, (ax, im) in enumerate(zip(axes, ims)):
-        matrix = data[0, snapshot, :, coupled_idx::2]
+        matrix = data[snapshot, :, coupled_idx::2]
         matrix /= matrix.max()  # Normalize
         im.set_array(matrix)
         name = "u" if coupled_idx == 0 else "v"
@@ -357,7 +219,7 @@ def animate(snapshot, data, ims, axes):
     return ims
 
 
-def make_animation(data, name, out_dir):
+def make_animation(data, filename_no_ext, out_dir):
     """
     Creates .gif animation of the data in the specified directory.
     """
@@ -367,11 +229,11 @@ def make_animation(data, name, out_dir):
     ani = animation.FuncAnimation(
         fig,
         partial(animate, data=data, ims=ims, axes=axes),
-        frames=data.shape[1],
+        frames=data.shape[0],
         interval=100,
         blit=True,
     )
-    out_name = os.path.join(out_dir, f"{name}_output.gif")
+    out_name = os.path.join(out_dir, f"{filename_no_ext}_output.gif")
     ani.save(out_name, writer="ffmpeg", dpi=150)
     plt.close(fig)
 
@@ -384,6 +246,7 @@ def plot_grid(
     var1="A",
     var2="B",
     filename="",
+    scale=1
 ):
     df, get_data = dataset.df, dataset.get_data
     if len(df) == 0:
@@ -403,7 +266,7 @@ def plot_grid(
         df = df.sort_values(by=[var1, var2])
         B_count = int(len(df) / A_count)
 
-    fig = plt.figure(figsize=(15, 12))
+    fig = plt.figure(figsize=(scale * 3 * B_count + 1, scale * 5 * A_count))
     grid = ImageGrid(fig, 111, nrows_ncols=(A_count, B_count), axes_pad=(0.1, 0.3))
     ims = []
 
@@ -411,10 +274,9 @@ def plot_grid(
         data = get_data(row)
         f_min = data.min()
         f_max = data.max()
-        ims.append((row, data[0, frame, :, component_idx::2], f_min, f_max))
+        ims.append((row, data[frame, :, component_idx::2], f_min, f_max))
 
     for ax, (row, im, f_min, f_max) in zip(grid, ims):
-        label = f"{var1}={row[var1]:.{sigdigits}f}"
         if var1 == "":
             label = ""
         else:

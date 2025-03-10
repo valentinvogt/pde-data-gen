@@ -6,10 +6,9 @@ import sys
 import os
 import pandas as pd
 import argparse
-from dotenv import load_dotenv
 from scipy.fft import fft
 
-from db_tools import Dataset, get_dataset, delete_run
+from db_tools import Dataset, get_dataset
 
 def compute_classification_metrics(
     ds: Dataset, time_ratio=0.1
@@ -160,20 +159,15 @@ if __name__ == "__main__":
     parser.add_argument("--model", default="bruss")
     parser.add_argument("--ds_id", default="")
     parser.add_argument("--time_ratio", default=0.1, type=float)
-    parser.add_argument("--location", default="work", type=str)
+    parser.add_argument("--directory_var", default="WORK_DIR", type=str)
 
     args = parser.parse_args()
     model = args.model
     ds_id = args.ds_id
     time_ratio = args.time_ratio
-    location = args.location
+    directory_var = args.directory_var
 
-    load_dotenv()
-    data_dir = os.getenv("DATA_DIR")
-    output_dir = os.getenv("OUT_DIR")
+    ds, _ = get_dataset(model, ds_id, directory_var)
 
-    ds, output_dir = get_dataset(location, model, ds_id)
-    os.makedirs(output_dir, exist_ok=True)
-    
     compute_classification_metrics(ds, time_ratio=time_ratio)
     print(f"Added classification metrics to {ds.ds_file}")
