@@ -18,11 +18,11 @@ module load openmpi/4.1.6
 module load netcdf-c/4.9.2
 module load python/3.11.6
 
-DATAPATH="/cluster/scratch/vogtva/data"
+DATAPATH="/cluster/work/math/vogtva/data"
 
 # ADAPT THESE
 model="bruss"
-dataset_id="phase_transition2"
+dataset_id="default_run"
 
 work_dir="$DATAPATH/$model/$dataset_id"
 echo $work_dir

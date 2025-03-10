@@ -15,4 +15,6 @@ module load openmpi/4.1.6
 module load netcdf-c/4.9.2
 module load python/3.11.6
 
-python3 analysis/classify.py --model "bruss" --run_id "pt_big" --outfile "classification_metrics.json" --time_ratio 0.2
+HDF5_USE_FILE_LOCKING=FALSE
+
+python3 src/classify.py --model "bruss" --ds_id "ball_big" --time_ratio 0.2 --location="work"

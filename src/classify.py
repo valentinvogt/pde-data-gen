@@ -9,18 +9,20 @@ import argparse
 from dotenv import load_dotenv
 from scipy.fft import fft
 
-from db_tools import get_db, get_data
-
+from db_tools import Dataset, get_dataset, delete_run
 
 def compute_classification_metrics(
-    df, time_ratio=0.1
+    ds: Dataset, time_ratio=0.1
 ) -> pd.DataFrame:
     """
     Compute classification metrics for a given range of frames
     """
+    df = ds.df
     n = len(df)
     if n == 0:
         raise ValueError("Empty df provided!")
+    # Add a column indicating whether there are NaNs in the data of the row
+    df["has_nans"] = False
 
     j = 0
     for i, row in df.iterrows():
@@ -28,23 +30,23 @@ def compute_classification_metrics(
             print(int(np.round(100 * j / n)), "%")
             j += int(np.round(0.1 * n))
             sys.stdout.flush()
-            
-        num_snapshots = row["n_snapshots"]
-        data = get_data(row)
 
+        num_snapshots = row["n_snapshots"]
+        data = ds.get_data(i)
+        
         if np.any(data.mask):
-            df.drop(i, inplace=True)
+            df.at[i, "has_nans"] = True
             continue
 
         A, B = row["A"], row["B"]
         u_ss, v_ss = A, B / A
-        steady_state = np.zeros_like(data[0, 0, :, :])
+        steady_state = np.zeros_like(data[0, :, :])
         steady_state[:, 0::2] = u_ss  # u steady state
         steady_state[:, 1::2] = v_ss  # v steady state
 
         starting_idx = int(num_snapshots * time_ratio)
-        u = data[0, :, :, 0::2]
-        v = data[0, :, :, 1::2]
+        u = data[:, :, 0::2]
+        v = data[:, :, 1::2]
 
         # Compute max_u and max_v
         max_u = np.max(u)
@@ -88,7 +90,25 @@ def compute_classification_metrics(
         df.at[i, "rel_std_u"] = rel_std_u_mean
         df.at[i, "rel_std_v"] = rel_std_v_mean
 
-    return df
+    for col in [
+        "mean_deviation",
+        "std_deviation",
+        "max_dx",
+        "mean_dx",
+        "max_dt",
+        "mean_dt",
+        "dominant_power",
+        "total_power",
+        "max_u",
+        "max_v",
+        "rel_std_u",
+        "rel_std_v",
+    ]:
+        df[col] = df[col].astype(float)
+        df[df["has_nans"]][col] = 0
+        ds.add_column(col, df[col].to_numpy())
+    ds.dataset.close()
+    return ds
 
 
 def classify_trajectories(
@@ -138,27 +158,22 @@ def classify_trajectories(
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--model", default="bruss")
-    parser.add_argument("--run_id", default="")
-    parser.add_argument("--outfile", default="")
+    parser.add_argument("--ds_id", default="")
     parser.add_argument("--time_ratio", default=0.1, type=float)
+    parser.add_argument("--location", default="work", type=str)
 
     args = parser.parse_args()
     model = args.model
-    run_id = args.run_id
-    outfile = args.outfile
+    ds_id = args.ds_id
     time_ratio = args.time_ratio
+    location = args.location
 
     load_dotenv()
     data_dir = os.getenv("DATA_DIR")
     output_dir = os.getenv("OUT_DIR")
 
-    output_dir = os.path.join(output_dir, model, run_id)
+    ds, output_dir = get_dataset(location, model, ds_id)
     os.makedirs(output_dir, exist_ok=True)
-    output_location = os.path.join(output_dir, outfile)
-    df0 = get_db(os.path.join(data_dir, model, run_id))
-
-    df = df0.copy()
-    df = df[df["run_id"] == run_id]
     
-    df_class = compute_classification_metrics(df, time_ratio=time_ratio)
-    df_class.to_json(output_location, orient='records', lines=True)
+    compute_classification_metrics(ds, time_ratio=time_ratio)
+    print(f"Added classification metrics to {ds.ds_file}")

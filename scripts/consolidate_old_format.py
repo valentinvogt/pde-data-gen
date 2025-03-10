@@ -4,7 +4,7 @@ import json
 import netCDF4 as nc
 import numpy as np
 from glob import glob
-from src.dataset import Dataset
+from src.dataset_manager import DatasetManager
 
 def consolidate_old_format(input_dir, output_file=None):
     """
@@ -43,7 +43,7 @@ def consolidate_old_format(input_dir, output_file=None):
     }
     
     # Create initial dataset
-    with Dataset(output_file, 'w') as dataset:
+    with DatasetManager(output_file, 'w') as dataset:
         # Store the configuration in the file attributes
         for key, value in config.items():
             if isinstance(value, (str, int, float, bool)):
@@ -58,11 +58,14 @@ def consolidate_old_format(input_dir, output_file=None):
     
     for json_path in json_files:
         # Load the JSON data
+        if os.path.basename(json_path).startswith("_"):
+            continue
         with open(json_path, 'r') as f:
             metadata = json.load(f)
         
         # Verify output file exists
         output_file_path = metadata.get("filename", "")
+        output_file_path = output_file_path.replace("/cluster/scratch/vogtva", "/cluster/work/math/vogtva")
         if not os.path.exists(output_file_path):
             print(f"Warning: Output file {output_file_path} not found, skipping")
             continue
@@ -70,7 +73,7 @@ def consolidate_old_format(input_dir, output_file=None):
         print(f"Processing run {run_index+1}/{len(json_files)}: {os.path.basename(json_path)}")
         
         # Add to dataset
-        with Dataset(output_file, 'a') as dataset:
+        with DatasetManager(output_file, 'a') as dataset:
             dataset.add_run_metadata(run_index, metadata)
             valid_outputs.append(metadata)
             run_index += 1

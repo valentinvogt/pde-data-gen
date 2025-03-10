@@ -26,7 +26,7 @@ from src.initial_conditions import (
     ic_from_dict,
 )
 
-from src.dataset import Dataset, create_metadata_file
+from src.dataset_manager import DatasetManager, create_metadata_file
 
 print_filenames = False
 
@@ -109,7 +109,7 @@ def run_wrapper(
         log_dict["original_point"] = original_point.model_dump()
 
     dataset_file = ds_info.file
-    with Dataset(dataset_file, "a") as dataset:
+    with DatasetManager(dataset_file, "a") as dataset:
         run_index = dataset.get_run_count()
         dataset.add_run_metadata(run_index, log_dict)
         log_dict["dataset_file"] = dataset_file

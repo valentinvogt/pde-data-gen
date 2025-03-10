@@ -4,7 +4,7 @@ defaults:
 
 # Model configuration
 model: bruss  # bruss, gray_scott, fhn
-dataset_id: default_run
+dataset_id: default_bruss
 dataset_type: one_trajectory  # one_trajectory or ball
 center_definition: from_grid  # from_grid or from_df
 df_path: null  # Path to dataframe file with parameter points

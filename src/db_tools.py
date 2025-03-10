@@ -26,28 +26,58 @@ def df_from_nc(ds):
 
 
 class Dataset:
+    """
+    This is a wrapper to be used for analysis. Not
+    to be confused with DatasetManager, which is used
+    for the creation of the consolidated NetCDF file.
+    """
+
     def __init__(self, data_dir, model, ds_id):
         self.data_dir = data_dir
         self.model = model
-        self.run_id = ds_id
+        self.ds_id = ds_id
         path = os.path.join(data_dir, model, ds_id)
-        self.dataset = nc.Dataset(os.path.join(path, "_dataset.nc"))
+        self.ds_file = os.path.join(path, "_dataset.nc")
+        self.dataset = nc.Dataset(self.ds_file, "a")
         self.df = df_from_nc(self.dataset)
         self.df["filename"] = self.df["output_file"]
-        self.df.drop(columns=["output_file"], inplace=True)
+        # self.df.drop(columns=["output_file"], inplace=True)
+        self.df["idx"] = self.df.index
 
     def get_data(self, row):
-        if isinstance(row, pd.DataFrame):
-            if len(row) == 1:
-                row = row.iloc[0]
-            else:
-                raise ValueError("row should be Series or single-row DataFrame")
-        elif isinstance(row, int):
-            row = self.df.iloc[row]
-        # locate row in df
-        idx = self.df[self.df["filename"] == row["filename"]].index[0]
+        if isinstance(row, int):
+            idx = row
+        else:
+            if isinstance(row, pd.DataFrame):
+                if len(row) == 1:
+                    row = row.iloc[0]
+                else:
+                    raise ValueError("row should be Series or single-row DataFrame")
+            idx = row.idx
         data = self.dataset.variables["data"][idx, :, :, :]
         return data
+
+    def add_column(self, column_name, values, exclude_flag="has_nans"):
+        self.df[column_name] = values
+        if column_name not in self.dataset.variables:
+            self.dataset.createVariable(column_name, "f8", ("run",))
+        self.dataset.variables[column_name][:] = values
+
+
+def filter_dataset(dataset: Dataset, df) -> Dataset:
+    """
+    Create a new Dataset object from another one with a df that only contains certain rows.
+
+    Parameters:
+    - dataset: The original Dataset object.
+    - filter_func: A function that takes a DataFrame row and returns True if the row should be included.
+
+    Returns:
+    - A new Dataset object with the filtered DataFrame.
+    """
+    new_dataset = Dataset(dataset.data_dir, dataset.model, dataset.ds_id)
+    new_dataset.df = df
+    return new_dataset
 
 
 def get_dataset(location, model, ds_id) -> Tuple[Dataset, str]:
@@ -76,16 +106,128 @@ def expand_json_column(df, column, short_name=None, all_fields=False):
     return df
 
 
-# def delete_run(df, run_id) -> pd.DataFrame:
-#     for i, row in df.iterrows():
-#         if row["run_id"] == run_id:
-#             filename = row["filename"]
-#             df.drop(i, inplace=True)
-#             os.remove(filename)
-#             os.remove(filename.replace("_output.nc", ".json"))
-#             os.remove(filename.replace("_output.nc", ".nc"))
+def delete_run(dataset: Dataset, indices, delete_files: bool = False) -> Dataset:
+    """
+    Delete a run from the dataset based on its run_id.
+    
+    Args:
+        dataset: The Dataset object.
+        run_id: The unique identifier for the run to delete.
+        delete_files: If True, also delete the associated files on disk.
+        
+    Returns:
+        The updated Dataset object with the run removed.
+    """
+    df = dataset.df
+    
+    # Get the row data for file deletion if needed
+    if delete_files:
+        rows_to_delete = df.loc[indices]
+        for _, row in rows_to_delete.iterrows():
+            filename = row["filename"]
+            try:
+                if os.path.exists(filename):
+                    os.remove(filename)
+                    print(f"Deleted output file: {filename}")
+                
+                # Try to remove associated input files
+                json_file = filename.replace("_output.nc", ".json")
+                if os.path.exists(json_file):
+                    os.remove(json_file)
+                    print(f"Deleted JSON file: {json_file}")
+                
+                input_file = filename.replace("_output.nc", ".nc")
+                if os.path.exists(input_file):
+                    os.remove(input_file)
+                    print(f"Deleted input file: {input_file}")
+            except Exception as e:
+                print(f"Error deleting files for run {row.idx}: {str(e)}")
+    
+    # Remove the run from the NetCDF file
+    # Note: We can't actually delete data from a NetCDF file; the best we can do
+    # is create a new dataset without the deleted runs
+    new_dataset_file = dataset.ds_file + ".tmp"
+    run_count = len(dataset.dataset.dimensions['run'])
+    
+    # Create a new file with the same structure but without the deleted run
+    with nc.Dataset(new_dataset_file, 'w') as new_root:
+        # Copy dimensions
+        for dim_name, dim in dataset.dataset.dimensions.items():
+            if dim_name == 'run':
+                new_root.createDimension('run', run_count - len(indices))
+            else:
+                new_root.createDimension(dim_name, len(dim) if not dim.isunlimited() else None)
+        
+        # Copy variables
+        for var_name, var in dataset.dataset.variables.items():
+            # Create the variable in the new file
+            new_var = new_root.createVariable(
+                var_name, 
+                var.datatype, 
+                var.dimensions, 
+                zlib=True if hasattr(var, 'zlib') else False
+            )
+            
+            # Copy variable attributes
+            for attr_name in var.ncattrs():
+                new_var.setncattr(attr_name, var.getncattr(attr_name))
+            
+            # Copy data for non-run dimension variables
+            if 'run' not in var.dimensions:
+                new_var[:] = var[:]
+            else:
+                # For run-dimensioned variables, copy all runs except the deleted ones
+                # Create a mask of runs to keep
+                keep_mask = np.ones(run_count, dtype=bool)
+                for idx in indices:
+                    keep_mask[idx] = False
+                
+                # Handle special case for the 'data' variable which has multiple dimensions
+                if var_name == 'data':
+                    # Copy data for all dimensions except the deleted run indices
+                    if 'data' in dataset.dataset.variables:
+                        # Get valid indices (runs we want to keep)
+                        valid_indices = np.where(keep_mask)[0]
+                        
+                        # Copy data for each valid run index
+                        for new_idx, old_idx in enumerate(valid_indices):
+                            try:
+                                # Copy all snapshots for this run
+                                if len(var.dimensions) == 4:  # run, snapshot, x, y dimensions
+                                    new_var[new_idx, :, :, :] = var[old_idx, :, :, :]
+                                else:
+                                    # Handle other dimension structures if needed
+                                    new_var[new_idx, :] = var[old_idx, :]
+                            except Exception as e:
+                                print(f"Error copying data for run {old_idx}: {str(e)}")
+                else:
+                    # For other run-dimensioned variables, filter out the deleted runs
+                    valid_indices = np.where(keep_mask)[0]
+                    for new_idx, old_idx in enumerate(valid_indices):
+                        try:
+                            new_var[new_idx] = var[old_idx]
+                        except Exception as e:
+                            print(f"Error copying variable {var_name} for run {old_idx}: {str(e)}")
+        
+        # Copy global attributes
+        for attr_name in dataset.dataset.ncattrs():
+            new_root.setncattr(attr_name, dataset.dataset.getncattr(attr_name))
+    
+    # Close the current dataset
+    dataset.dataset.close()
+    
+    # Replace the old file with the new one
+    os.replace(new_dataset_file, dataset.ds_file)
+    
+    # Reopen the dataset and refresh the dataframe
+    dataset.dataset = nc.Dataset(dataset.ds_file, "a")
+    dataset.df = df_from_nc(dataset.dataset)
+    dataset.df["filename"] = dataset.df["output_file"]
+    dataset.df["idx"] = dataset.df.index
+    
+    print(f"Successfully deleted run '{run_id}' from dataset")
+    return dataset
 
-#     return df
 
 
 ##############################################
@@ -167,7 +309,6 @@ def get_metrics_array(dataset: Dataset, start_frame=0, metric="dev"):
     title = ""
     if metric not in ["dev", "dt", "dx", "std"]:
         raise ValueError("Not a valid metric!")
-
     df, get_data = dataset.df, dataset.get_data
     all_metrics = []
     for _, row in df.iterrows():
@@ -452,8 +593,10 @@ def plot_ball_behavior(
     Returns a Plotly figure.
     """
 
-    df = dataset.df, dataset.get_data
-    all_metrics, title = get_metrics_array(df, start_frame=start_frame, metric=metric)
+    df = dataset.df
+    all_metrics, title = get_metrics_array(
+        dataset, start_frame=start_frame, metric=metric
+    )
     all_metrics = np.array(all_metrics)
     row = df.iloc[0]
     dt = row["dt"] * row["Nt"] / row["n_snapshots"]
@@ -539,21 +682,23 @@ def plot_ball_behavior(
     return fig
 
 
-def plot_all_trajectories(dataset, start_frame=0, metric="dev"):
+def plot_all_trajectories(dataset, start_frame=0, metric="dev", col=None, fig=None):
     t = np.linspace(0, 100, 100)
     title = ""
 
     # Create figure
-    fig = go.Figure()
+    show = False
+    if fig is None:
+        show = True
+        fig = go.Figure()
 
     all_metrics, title = get_metrics_array(dataset, start_frame, metric)
-
     for i, values in enumerate(all_metrics):
         # Add a trace for each row's metric values
         fig.add_trace(
             go.Scatter(
                 x=t,
-                y=values,
+                y=values[:, 0],
                 mode="lines",
                 name=f"Row {i}",  # Use row index or a unique identifier
                 hovertemplate="Index: %{x}<br>Value: %{y:.2f}<extra></extra>",
@@ -569,8 +714,9 @@ def plot_all_trajectories(dataset, start_frame=0, metric="dev"):
         showlegend=True,
         template="plotly_white",
     )
-
-    # Add range slider for better interactivity
     fig.update_layout(xaxis=dict(rangeslider=dict(visible=True), type="linear"))
 
-    fig.show()
+    if show:
+        fig.show()
+    else:
+        return fig
