@@ -128,7 +128,7 @@ def compute_metrics(row, data, start_frame, end_frame=-1):
         end_frame = row["n_snapshots"] + end_frame
 
     num_frames = end_frame - start_frame + 1
-
+    frame_dt = row["dt"] * row["Nt"] / row["n_snapshots"]
     deviations = np.zeros((num_frames, 2))
     time_derivatives = np.zeros((num_frames, 2))
     spatial_derivatives = np.zeros((num_frames, 2))
@@ -141,8 +141,8 @@ def compute_metrics(row, data, start_frame, end_frame=-1):
 
     u = data[:, :, 0::2]
     v = data[:, :, 1::2]
-    du_dt = np.gradient(u, row["dt"], axis=0)
-    dv_dt = np.gradient(v, row["dt"], axis=0)
+    du_dt = np.gradient(u, frame_dt, axis=0)
+    dv_dt = np.gradient(v, frame_dt, axis=0)
 
     for j in range(0, num_frames):
         snapshot = start_frame + j
@@ -544,7 +544,8 @@ def plot_ball_behavior(
     return fig
 
 
-def plot_all_trajectories(dataset, start_frame=0, metric="dev", col=None, fig=None):
+def plot_all_trajectories(dataset, start_frame=0, metric="dev", fig=None, label_column="idx"):
+    df = dataset.df
     t = np.linspace(0, 100, 100)
     title = ""
 
@@ -553,7 +554,6 @@ def plot_all_trajectories(dataset, start_frame=0, metric="dev", col=None, fig=No
     if fig is None:
         show = True
         fig = go.Figure()
-
     all_metrics, title = get_metrics_array(dataset, start_frame, metric)
     for i, values in enumerate(all_metrics):
         # Add a trace for each row's metric values
@@ -562,7 +562,7 @@ def plot_all_trajectories(dataset, start_frame=0, metric="dev", col=None, fig=No
                 x=t,
                 y=values[:, 0],
                 mode="lines",
-                name=f"Row {i}",  # Use row index or a unique identifier
+                name=f"{label_column} = {df.iloc[i][label_column]}",
                 hovertemplate="Index: %{x}<br>Value: %{y:.2f}<extra></extra>",
             )
         )

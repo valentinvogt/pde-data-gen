@@ -100,6 +100,8 @@ def consolidate_outputs(consolidated_file_path, valid_outputs):
         
         # Process the first output file to get dimensions
         first_output = valid_outputs[0]["filename"]
+        first_output = first_output.replace("/cluster/scratch/vogtva", "/cluster/work/math/vogtva")
+
         with nc.Dataset(first_output, "r") as ds:
             # Get metadata
             n_snapshots = ds.getncattr("number_snapshots")
@@ -133,7 +135,8 @@ def consolidate_outputs(consolidated_file_path, valid_outputs):
         # Process each run
         for run_idx, metadata in enumerate(valid_outputs):
             output_file = metadata["filename"]
-            
+            output_file = output_file.replace("/cluster/scratch/vogtva", "/cluster/work/math/vogtva")
+
             print(f"Processing run {run_idx+1}/{len(valid_outputs)}: {os.path.basename(output_file)}")
             
             # Open the output file

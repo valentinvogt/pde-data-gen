@@ -78,7 +78,7 @@ class DatasetManager:
             self.root.variables['original_point'][run_index] = json.dumps(metadata.get('original_point', {}))
         else:
             self.root.variables['original_point'][run_index] = '{}'
-    
+
     def get_run_count(self) -> int:
         """Get the current number of runs in the file"""
         return len(self.root.dimensions['run'])

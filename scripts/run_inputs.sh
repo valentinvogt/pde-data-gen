@@ -1,13 +1,14 @@
 #!/bin/bash
-#SBATCH --job-name=ball
-#SBATCH --output=ball-%j.out
-#SBATCH --error=ball-%j.err
+#SBATCH --job-name=blowup
+#SBATCH --output=blowup-%j.out
+#SBATCH --error=blowup-%j.err
 #SBATCH --ntasks=1
 #SBATCH --nodes=1
 #SBATCH --cpus-per-task=2
 #SBATCH --gpus-per-node=4
 #SBATCH --mem-per-cpu=4096
-#SBATCH --time=8:00:00
+#SBATCH --time=2-12:00:00
+#SBATCH --mail-type=END
 
 module load stack/2024-06
 module load gcc/12.2.0
@@ -22,7 +23,7 @@ DATAPATH="/cluster/work/math/vogtva/data"
 
 # ADAPT THESE
 model="bruss"
-dataset_id="default_run"
+dataset_id="param_sweep"
 
 work_dir="$DATAPATH/$model/$dataset_id"
 echo $work_dir

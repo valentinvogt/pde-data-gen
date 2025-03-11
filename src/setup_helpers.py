@@ -32,7 +32,7 @@ class DatasetInfo(BaseModel):
     type: str
     id: str
     file: str
-    output_dir: str
+    output_dir: str # e.g., /data/<model>/<dataset_id>/
 
     @classmethod
     def from_dict(cls, d: Dict[str, str]) -> "DatasetInfo":

@@ -42,7 +42,6 @@ def run_wrapper(
 ):
     model = ds_info.model
     ds_id = ds_info.id
-
     params = model_params.model_dump()
     A, B, Du, Dv = params.values()
 
@@ -170,9 +169,7 @@ def ball_sampling(
     num_samples_per_point: int,
     num_samples_per_ic: int,
 ):
-    data_dir = os.getenv("DATA_DIR")
-    output_dir = dataset_info.output_dir
-    path = os.path.join(data_dir, output_dir)
+    path = dataset_info.output_dir
     os.makedirs(path, exist_ok=True)
 
     j = 0
@@ -237,7 +234,6 @@ def main(cfg: DictConfig):
     dataset_id = cfg.dataset_id
     dataset_type = cfg.dataset_type
     center_definition = cfg.center_definition
-    print(f"Creating a {model} dataset with ID {dataset_id}")
     
     # Set up output directories
     if cfg.location == "work":
@@ -266,9 +262,12 @@ def main(cfg: DictConfig):
         raise ValueError(f"Invalid center definition: {center_definition}")
     
     # Create metadata for this dataset
-    dataset_file = create_metadata_file(output_dir, OmegaConf.to_container(cfg, resolve=True))
-    print(f"Created dataset file: {dataset_file}")
-    
+    dataset_file = os.path.join(output_dir, "_dataset.nc")
+    if not os.path.exists(dataset_file):
+        dataset_file = create_metadata_file(output_dir, OmegaConf.to_container(cfg, resolve=True))
+        print(f"Created dataset file: {dataset_file}")
+    else:
+        print(f"Appending to {dataset_file}")
     dataset_info = DatasetInfo(
         model=model,
         type=dataset_type,
@@ -314,3 +313,4 @@ def main(cfg: DictConfig):
 
 if __name__ == "__main__":
     main()
+    print("Successfully generated inputs")
