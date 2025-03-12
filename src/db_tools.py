@@ -17,7 +17,19 @@ from functools import partial
 ############################################
 
 
-def df_from_nc(ds):
+def df_from_nc(ds: nc.Dataset) -> pd.DataFrame:
+    """
+    Convert a NetCDF dataset to a pandas DataFrame.
+    
+    Extracts all variables from the dataset except 'data', 'time', and 'input_file',
+    and converts them to DataFrame columns.
+    
+    Args:
+        ds: A NetCDF4 Dataset object containing variables to be converted
+        
+    Returns:
+        pandas.DataFrame: DataFrame containing all extracted variables
+    """
     df = pd.DataFrame()
     for var in ds.variables:
         if var not in ["data", "time", "input_file"]:
@@ -38,6 +50,8 @@ class Dataset:
         self.ds_id = ds_id
         path = os.path.join(data_dir, model, ds_id)
         self.ds_file = os.path.join(path, "_dataset.nc")
+        if not os.path.exists(self.ds_file):
+            raise FileNotFoundError(self.ds_file)
         self.dataset = nc.Dataset(self.ds_file, "a")
         self.df = df_from_nc(self.dataset)
         self.df["filename"] = self.df["output_file"]
@@ -68,12 +82,12 @@ def filter_dataset(dataset: Dataset, df) -> Dataset:
     """
     Create a new Dataset object from another one with a df that only contains certain rows.
 
-    Parameters:
-    - dataset: The original Dataset object.
-    - filter_func: A function that takes a DataFrame row and returns True if the row should be included.
+    Args:
+        dataset: The original Dataset object.
+        filter_func: A function that takes a DataFrame row and returns True if the row should be included.
 
     Returns:
-    - A new Dataset object with the filtered DataFrame.
+        A new Dataset object with the filtered DataFrame.
     """
     new_dataset = Dataset(dataset.data_dir, dataset.model, dataset.ds_id)
     new_dataset.df = df
@@ -81,6 +95,17 @@ def filter_dataset(dataset: Dataset, df) -> Dataset:
 
 
 def get_dataset(model, ds_id, directory_var="WORK_DIR") -> Tuple[Dataset, str]:
+    """
+    Load a dataset based on model and dataset ID from the environment directory.
+    
+    Args:
+        model: Model identifier string
+        ds_id: Dataset identifier string
+        directory_var: Name of the env. variable containing the directory
+        
+    Returns:
+        Tuple[Dataset, str]: A tuple containing the loaded Dataset object and the output directory path
+    """
     load_dotenv()
     data_dir = os.getenv(directory_var)
     output_dir = os.path.join(data_dir, "out")
@@ -246,7 +271,7 @@ def plot_grid(
     var1="A",
     var2="B",
     filename="",
-    scale=1
+    scale=1,
 ):
     df, get_data = dataset.df, dataset.get_data
     if len(df) == 0:
@@ -314,7 +339,7 @@ def plot_grid(
 
 def metrics_grid(
     dataset: Dataset,
-    start_frame,
+    start_frame=0,
     sigdigits=3,
     joint=False,
     var1="A",
@@ -324,6 +349,24 @@ def metrics_grid(
     show_title=True,
     scale=1,
 ):
+    """
+    Generates a grid of metrics plots for a given dataset.
+
+    Args:
+        dataset: The dataset containing trajectories to be plotted.
+        start_frame: The frame at which to start computing metrics.
+        sigdigits: Number of digits to show in labels for float variables.
+        joint: Whether to average u and v to get a single time series.
+        var1: First variable by which to organize the grid.
+        var2: Second variable by which to organize the grid.
+        metric: The metric to plot. Must be 'dev', 'dx', 'dt', or 'std'.
+        filename: The name of the file to save the plot to.
+        show_title: Whether to show the title of the plot.
+        scale: Scaling factor for the plot.
+
+    Returns:
+        Axes of the plot.
+    """
     if metric == "dev":
         text = "Deviation ||u(t) - u*||"
     elif metric == "dx":
@@ -544,7 +587,9 @@ def plot_ball_behavior(
     return fig
 
 
-def plot_all_trajectories(dataset, start_frame=0, metric="dev", fig=None, label_column="idx"):
+def plot_all_trajectories(
+    dataset, start_frame=0, metric="dev", fig=None, label_column="idx"
+):
     df = dataset.df
     t = np.linspace(0, 100, 100)
     title = ""

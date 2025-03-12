@@ -7,7 +7,7 @@ defaults:
 dataset_id: param_sweep
 dataset_type: ball
 center_definition: from_df
-df_path: data/param_sweep.csv
+workdir_env_var: WORK_DIR # An environment variable of this name should exist
 
 # Simulation parameters for higher resolution
 sim_params:

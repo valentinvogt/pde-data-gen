@@ -8,7 +8,7 @@ dataset_id: ball_from_df
 dataset_type: ball
 center_definition: from_df
 df_path: data/varied_points.csv
-location: work # work or scratch
+workdir_env_var: WORK_DIR # An environment variable of this name should exist
 
 # Simulation parameters for higher resolution
 sim_params:

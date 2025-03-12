@@ -7,7 +7,7 @@ model: gray_scott
 dataset_id: gs_single
 dataset_type: one_trajectory
 center_definition: from_grid
-location: work # work or scratch
+workdir_env_var: WORK_DIR # An environment variable of this name should exist
 
 grid_mode: absolute
 grid_params:

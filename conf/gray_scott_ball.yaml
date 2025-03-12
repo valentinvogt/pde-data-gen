@@ -7,7 +7,7 @@ model: gray_scott
 dataset_id: gs_ball
 dataset_type: ball
 center_definition: from_grid
-location: work # work or scratch
+workdir_env_var: WORK_DIR # An environment variable of this name should exist
 
 grid_mode: relative
 grid_params:

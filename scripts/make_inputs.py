@@ -234,12 +234,9 @@ def main(cfg: DictConfig):
     dataset_id = cfg.dataset_id
     dataset_type = cfg.dataset_type
     center_definition = cfg.center_definition
-    
+    workdir_env_var = cfg.workdir_env_var
     # Set up output directories
-    if cfg.location == "work":
-        data_dir = os.getenv("WORK_DIR")
-    else:
-        data_dir = os.getenv("SCRATCH_DIR")
+    data_dir = os.getenv(workdir_env_var)
     output_dir = os.path.join(data_dir, "data", model, dataset_id)
     os.makedirs(output_dir, exist_ok=True)
     
@@ -268,6 +265,7 @@ def main(cfg: DictConfig):
         print(f"Created dataset file: {dataset_file}")
     else:
         print(f"Appending to {dataset_file}")
+    
     dataset_info = DatasetInfo(
         model=model,
         type=dataset_type,
@@ -276,6 +274,10 @@ def main(cfg: DictConfig):
         output_dir=output_dir,
     )
     
+    random_seed = None
+    if "random_seed" in cfg:
+        random_seed = cfg.random_seed
+
     # dataset sampling strategy based on configuration
     if dataset_type == "ball":
         sampling_std = ModelParams(**cfg.sampling_std)
@@ -306,6 +308,7 @@ def main(cfg: DictConfig):
                     ic,
                     dataset_info,
                     run_id=str(uuid4()),
+                    random_seed=random_seed
                 )
     else:
         raise ValueError(f"Invalid run_type: {dataset_type}")

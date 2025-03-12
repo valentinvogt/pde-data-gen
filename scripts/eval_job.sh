@@ -17,4 +17,4 @@ module load python/3.11.6
 
 HDF5_USE_FILE_LOCKING=FALSE
 
-python3 src/classify.py --model "bruss" --ds_id "phase_transition" --time_ratio 0.2
+python3 src/classify.py --model "gray_scott" --ds_id "new_ball" --time_ratio 0.2

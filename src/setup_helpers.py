@@ -3,6 +3,10 @@ import json
 from pydantic import BaseModel, Field
 from typing import Union, List, Callable, Literal, Dict
 
+############################################
+#     Pydantic Models for configuration    #
+############################################
+
 
 class ModelParams(BaseModel):
     A: float
@@ -28,16 +32,20 @@ class SimParams(BaseModel):
 
 
 class DatasetInfo(BaseModel):
-    model: str
-    type: str
-    id: str
-    file: str
-    output_dir: str # e.g., /data/<model>/<dataset_id>/
+    model: str  # bruss, gray_scott, fhn are supported
+    type: str  # ball or one_trajectory
+    id: str  # identifier of the dataset
+    file: str  # full name of the consolidated netcdf, currently output_dir/_dataset.nc
+    output_dir: str  # full output directory where nc and json files are generated
 
     @classmethod
     def from_dict(cls, d: Dict[str, str]) -> "DatasetInfo":
         return cls(**d)
 
+
+############################################
+#     Helper functions for input files     #
+############################################
 
 def zero_func(member, coupled_idx, x_position, y_position):
     return np.zeros(shape=x_position.shape)

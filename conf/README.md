@@ -1,11 +1,3 @@
-# Hydra Configuration System
-
-This directory contains the Hydra-based configuration files for PDE data generation. Hydra is a framework for elegantly configuring complex applications, making it easy to:
-
-- Compose configurations from multiple sources
-- Override configuration via the command line
-- Create structured configurations with inheritance
-
 ## Usage
 
 Run the data generation script with the default configuration:
@@ -44,8 +36,9 @@ The `config.yaml` file contains the base configuration with default values. All 
 The configuration schema follows the structure described in `scripts/config_files/config.md`:
 
 - `model`: Model type (e.g., "bruss", "gray_scott", "fhn")
-- `run_id`: Unique identifier for the run
-- `run_type`: Sampling approach ("one_trajectory" or "ball")
+- `ds_id`: Unique identifier for the dataset
+- `ds_type`: Sampling approach ("one_trajectory" or "ball")
+- `workdir_env_var`: Specifies the environment variable containing the path to the working directory (note that the actual outputs go into $workdir_env_var/data/<model>/ds_id/)
 - `center_definition`: Method for defining parameter centers ("from_df" or "from_grid")
 - `df_path`: Path to parameter CSV (required when center_definition="from_df")
 - `grid_mode`: Method for grid parameter specification ("absolute" or "relative")
