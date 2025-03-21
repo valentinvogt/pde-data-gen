@@ -94,7 +94,7 @@ def filter_dataset(dataset: Dataset, df) -> Dataset:
     return new_dataset
 
 
-def get_dataset(model, ds_id, directory_var="WORK_DIR") -> Tuple[Dataset, str]:
+def get_dataset(model, ds_id, directory_var="WORKDIR") -> Tuple[Dataset, str]:
     """
     Load a dataset based on model and dataset ID from the environment directory.
     

@@ -13,3 +13,5 @@ outputs/
 
 *.err
 *.out
+
+*.zarr

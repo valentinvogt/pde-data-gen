@@ -84,26 +84,26 @@ def consolidate_outputs(consolidated_file_path):
                             root.createVariable("time", "f4", ("snapshot",))
 
                         has_setup = True
+                    print(root)
+                    # # Copy data from output file to consolidated file
+                    # # Assuming output file has data shape [member, snapshot, x, y*n_coupled]
+                    # # and we want to store it in consolidated as [run, snapshot, x, y*n_coupled]
+                    # for snap_idx in range(n_snapshots):
+                    #     data = ds.variables["data"][
+                    #         0, snap_idx, :, :
+                    #     ]  # 0 for first member
 
-                    # Copy data from output file to consolidated file
-                    # Assuming output file has data shape [member, snapshot, x, y*n_coupled]
-                    # and we want to store it in consolidated as [run, snapshot, x, y*n_coupled]
-                    for snap_idx in range(n_snapshots):
-                        data = ds.variables["data"][
-                            0, snap_idx, :, :
-                        ]  # 0 for first member
+                    #     # Store in consolidated file
+                    #     snapshot_idx = snap_idx  # This might need to be adjusted if we want to interleave snapshots
+                    #     root.variables["data"][run_idx, snapshot_idx, :, :] = data
 
-                        # Store in consolidated file
-                        snapshot_idx = snap_idx  # This might need to be adjusted if we want to interleave snapshots
-                        root.variables["data"][run_idx, snapshot_idx, :, :] = data
+                    #     # Store time data if we have it
+                    #     if "time" in ds.variables:
+                    #         root.variables["time"][snapshot_idx] = ds.variables["time"][
+                    #             snap_idx
+                    #         ]
 
-                        # Store time data if we have it
-                        if "time" in ds.variables:
-                            root.variables["time"][snapshot_idx] = ds.variables["time"][
-                                snap_idx
-                            ]
-
-                    print(f"  Added {n_snapshots} snapshots for run {run_idx}")
+                    # print(f"  Added {n_snapshots} snapshots for run {run_idx}")
 
             except Exception as e:
                 print(f"  Error processing output file {output_file}: {str(e)}")

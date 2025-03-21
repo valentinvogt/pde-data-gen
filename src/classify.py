@@ -159,7 +159,7 @@ if __name__ == "__main__":
     parser.add_argument("--model", default="bruss")
     parser.add_argument("--ds_id", default="")
     parser.add_argument("--time_ratio", default=0.1, type=float)
-    parser.add_argument("--directory_var", default="WORK_DIR", type=str)
+    parser.add_argument("--directory_var", default="WORKDIR", type=str)
 
     args = parser.parse_args()
     model = args.model

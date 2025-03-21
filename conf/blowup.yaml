@@ -8,7 +8,7 @@ dataset_id: blowup
 dataset_type: one_trajectory  # one_trajectory or ball
 center_definition: from_df  # from_grid or from_df
 df_path: data/blowup_rows.csv  # Path to dataframe file with parameter points
-workdir_env_var: WORK_DIR # An environment variable of this name should exist
+workdir_env_var: WORKDIR # An environment variable of this name should exist
 
 # Grid configuration (used when center_definition is from_grid)
 # grid_mode: absolute  # absolute or relative
