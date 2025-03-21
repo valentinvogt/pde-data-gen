@@ -1,14 +1,13 @@
 #!/bin/bash
-#SBATCH --job-name=blowup
-#SBATCH --output=blowup-%j.out
-#SBATCH --error=blowup-%j.err
+#SBATCH --job-name=input-runner
+#SBATCH --output=input-runner-%j.out
+#SBATCH --error=input-runner-%j.err
 #SBATCH --ntasks=1
 #SBATCH --nodes=1
 #SBATCH --cpus-per-task=2
 #SBATCH --gpus-per-node=4
 #SBATCH --mem-per-cpu=4096
-#SBATCH --time=2-12:00:00
-#SBATCH --mail-type=END
+#SBATCH --time=2:00:00
 
 module load stack/2024-06
 module load gcc/12.2.0
@@ -23,15 +22,15 @@ DATAPATH="/cluster/work/math/vogtva/data"
 
 # ADAPT THESE
 model="bruss"
-dataset_id="param_sweep"
+dataset_id="default_bruss"
 
-work_dir="$DATAPATH/$model/$dataset_id"
-echo $work_dir
+WORKDIR="$DATAPATH/$model/$dataset_id"
+echo $WORKDIR
 # Check if we're using the consolidated file approach
-if [[ -f "$work_dir/_dataset.nc" ]]; then
+if [[ -f "$WORKDIR/_dataset.nc" ]]; then
     echo "Using consolidated output approach"
     
-    for file in "$work_dir"/*.nc; do
+    for file in "$WORKDIR"/*.nc; do
         # Skip files that aren't input files
         if [[ "$file" == *_output.nc || "$file" == *_dataset.nc ]]; then
             continue
@@ -40,13 +39,13 @@ if [[ -f "$work_dir/_dataset.nc" ]]; then
         # echo "Processing $file"
         build/run_from_netcdf "$file" 1
     done
-    python scripts/consolidate_outputs.py $work_dir/_dataset.nc
+    python scripts/consolidate_outputs.py $WORKDIR/_dataset.nc
     
 else
     # Original approach - process each file individually
     echo "Using original individual files approach"
     
-    for file in "$work_dir"/*.nc; do
+    for file in "$WORKDIR"/*.nc; do
         # Skip output files
         if [[ "$file" == *_output.nc ]]; then
             continue
