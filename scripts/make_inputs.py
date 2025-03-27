@@ -58,7 +58,6 @@ def run_wrapper(
     output_filename = input_filename.replace(".nc", "_output.nc")
 
     ic_function = get_ic_function(model, A, B, initial_condition)
-
     if random_seed is None:
         random_seed = randint(0, 2**32 - 1)
 
@@ -228,7 +227,7 @@ def parameters_from_df(df_path: str) -> pd.DataFrame:
 @hydra.main(version_base=None, config_path="../conf", config_name="config")
 def main(cfg: DictConfig):
     load_dotenv()
-    
+
     # Extract configuration
     model = cfg.model
     dataset_id = cfg.dataset_id
@@ -239,33 +238,37 @@ def main(cfg: DictConfig):
     data_dir = os.getenv(workdir_env_var)
     output_dir = os.path.join(data_dir, "data", model, dataset_id)
     os.makedirs(output_dir, exist_ok=True)
-    
+
     # Save configuration for reference
     with open(os.path.join(output_dir, "_config.json"), "w") as f:
         json.dump(OmegaConf.to_container(cfg, resolve=True), f, indent=2)
-    
+
     # Convert configuration to appropriate objects
     sim_params = SimParams(**cfg.sim_params)
     initial_conditions = [ic_from_dict(dict(ic)) for ic in cfg.initial_conditions]
-    
+
     # Generate parameter grid based on configuration
     if center_definition == "from_grid":
         param_grid = parameters_from_grid(cfg)
     elif center_definition == "from_df":
         if cfg.df_path is None:
-            raise ValueError("df_path must be specified when center_definition is from_df")
+            raise ValueError(
+                "df_path must be specified when center_definition is from_df"
+            )
         param_grid = parameters_from_df(cfg.df_path)
     else:
         raise ValueError(f"Invalid center definition: {center_definition}")
-    
+
     # Create metadata for this dataset
     dataset_file = os.path.join(output_dir, "_dataset.nc")
     if not os.path.exists(dataset_file):
-        dataset_file = create_metadata_file(output_dir, OmegaConf.to_container(cfg, resolve=True))
+        dataset_file = create_metadata_file(
+            output_dir, OmegaConf.to_container(cfg, resolve=True)
+        )
         print(f"Created dataset file: {dataset_file}")
     else:
         print(f"Appending to {dataset_file}")
-    
+
     dataset_info = DatasetInfo(
         model=model,
         type=dataset_type,
@@ -273,7 +276,7 @@ def main(cfg: DictConfig):
         file=dataset_file,
         output_dir=output_dir,
     )
-    
+
     random_seed = None
     if "random_seed" in cfg:
         random_seed = cfg.random_seed
@@ -284,7 +287,7 @@ def main(cfg: DictConfig):
         centers = [ModelParams(**center) for center in param_grid]
         num_samples_per_point = cfg.num_samples_per_point
         num_samples_per_ic = cfg.num_samples_per_ic
-        
+
         ball_sampling(
             centers,
             sim_params,
@@ -308,7 +311,7 @@ def main(cfg: DictConfig):
                     ic,
                     dataset_info,
                     run_id=str(uuid4()),
-                    random_seed=random_seed
+                    random_seed=random_seed,
                 )
     else:
         raise ValueError(f"Invalid run_type: {dataset_type}")

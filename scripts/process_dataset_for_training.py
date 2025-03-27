@@ -210,3 +210,5 @@ if __name__ == "__main__":
         shutil.rmtree(outfile_zarr)
 
     ds_final.to_zarr(outfile_zarr)
+
+    print("Done")
