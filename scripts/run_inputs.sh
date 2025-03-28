@@ -7,7 +7,7 @@
 #SBATCH --cpus-per-task=2
 #SBATCH --gpus-per-node=4
 #SBATCH --mem-per-cpu=8192
-#SBATCH --time=2-18:00:00
+#SBATCH --time=6:00:00
 
 module load stack/2024-06
 module load gcc/12.2.0
@@ -21,8 +21,8 @@ module load python/3.11.6
 DATAPATH="/cluster/work/math/vogtva/data"
 
 # ADAPT THESE
-model="bruss"
-dataset_id="param_sweep"
+model="gray_scott"
+dataset_id="gs_pt"
 
 WORKDIR="$DATAPATH/$model/$dataset_id"
 echo $WORKDIR

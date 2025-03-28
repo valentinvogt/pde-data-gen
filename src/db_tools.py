@@ -59,7 +59,7 @@ class Dataset:
         self.df["idx"] = self.df.index
 
     def get_data(self, row):
-        if isinstance(row, int):
+        if isinstance(row, (int, np.int64)):
             idx = row
         else:
             if isinstance(row, pd.DataFrame):
@@ -90,6 +90,9 @@ def filter_dataset(dataset: Dataset, df) -> Dataset:
         A new Dataset object with the filtered DataFrame.
     """
     new_dataset = Dataset(dataset.data_dir, dataset.model, dataset.ds_id)
+    if type(df) is pd.Series:
+        df = df.to_frame().T
+
     new_dataset.df = df
     return new_dataset
 
@@ -146,7 +149,7 @@ def filter_df(df, **kwargs):
 def compute_metrics(row, data, start_frame, end_frame=-1):
     """
     end_frame: works like Python slicing
-    Returns deviations, time_derivatives, spatial_derivatives, relative std
+    Returns deviations, time_derivatives, spatial_derivatives, relative std, norm
     as 2D arrays of shape (num_frames, 2)
     """
     if end_frame < 0:
@@ -158,6 +161,7 @@ def compute_metrics(row, data, start_frame, end_frame=-1):
     time_derivatives = np.zeros((num_frames, 2))
     spatial_derivatives = np.zeros((num_frames, 2))
     relative_stds = np.zeros((num_frames, 2))
+    norms = np.zeros((num_frames, 2))
 
     steady_state = np.zeros_like(data[0, :, :])
 
@@ -183,8 +187,10 @@ def compute_metrics(row, data, start_frame, end_frame=-1):
         spatial_derivatives[j, 1] = np.linalg.norm(dv_dx)
         relative_stds[j, 0] = np.std(u_t) / np.mean(u_t)
         relative_stds[j, 1] = np.std(v_t) / np.mean(v_t)
+        norms[j, 0] = np.linalg.norm(u)
+        norms[j, 1] = np.linalg.norm(v)
 
-    return deviations, time_derivatives, spatial_derivatives, relative_stds
+    return deviations, time_derivatives, spatial_derivatives, relative_stds, norms
 
 
 def get_metrics_array(dataset: Dataset, start_frame=0, metric="dev"):
@@ -258,6 +264,10 @@ def make_animation(data, filename_no_ext, out_dir):
         interval=100,
         blit=True,
     )
+    
+    if not os.path.exists(out_dir):
+        os.makedirs(out_dir)
+        
     out_name = os.path.join(out_dir, f"{filename_no_ext}_output.gif")
     ani.save(out_name, writer="ffmpeg", dpi=150)
     plt.close(fig)
@@ -375,8 +385,10 @@ def metrics_grid(
         text = "Time Derivative ||du/dt||"
     elif metric == "std":
         text = "Relative Standard Deviation"
+    elif metric == "norm":
+        text = "Absolute Norm"
     else:
-        raise ValueError("metric must be 'dev', 'dx', or 'dt'")
+        raise ValueError("metric must be one of 'dev', 'dx', 'dt', 'std', 'norm'.")
 
     df, get_data = dataset.df, dataset.get_data
     if len(df) == 0:
@@ -419,6 +431,8 @@ def metrics_grid(
             values = metrics[2]
         elif metric == "std":
             values = metrics[3]
+        elif metric == "norm":
+            values = metrics[4]
 
         row_idx = i // B_count if B_count > 1 else i
         col_idx = i % B_count if B_count > 1 else 0
