@@ -4,7 +4,7 @@
 #SBATCH --error=eval-%j.err
 #SBATCH --cpus-per-task=4
 #SBATCH --mem-per-cpu=4096
-#SBATCH --time=12:00:00
+#SBATCH --time=23:00:00
 ##SBATCH --mail-type=END
 
 module load stack/2024-06
@@ -19,9 +19,15 @@ module load python/3.11.6
 source .env
 HDF5_USE_FILE_LOCKING=FALSE
 
-MODEL=gray_scott
-DATASET=gs_pt
-python3 scripts/consolidate_old_format.py $WORKDIR/data/$MODEL/$DATASET
+MODEL=bruss
+DATASET=param_sweep
+
+#--- Consolidate
+# python3 scripts/consolidate_old_format.py $WORKDIR/data/$MODEL/$DATASET
+
+#--- Classify
 # python3 src/classify.py --model $MODEL --ds_id $DATASET --time_ratio 0.2
-# NUM_SNAPSHOTS=10
-# python3 scripts/process_dataset_for_training.py $WORKDIR/data/$MODEL/$DATASET/_dataset.nc --num_snapshots $NUM_SNAPSHOTS
+
+#--- Process for training
+NUM_SNAPSHOTS=10
+python3 scripts/process_dataset_for_training.py $WORKDIR/data/$MODEL/$DATASET/_dataset.nc --num_snapshots $NUM_SNAPSHOTS

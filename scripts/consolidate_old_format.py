@@ -23,6 +23,7 @@ def consolidate_old_format(input_dir, output_file=None):
         print(f"No JSON files found in {input_dir}")
         return
 
+    json_files = [file for file in json_files if not os.path.basename(file).startswith("_")]
     print(f"Found {len(json_files)} JSON files in {input_dir}")
 
     # Create output file if not specified
@@ -59,8 +60,6 @@ def consolidate_old_format(input_dir, output_file=None):
 
     for json_path in json_files:
         # Load the JSON data
-        if os.path.basename(json_path).startswith("_"):
-            continue
         with open(json_path, "r") as f:
             metadata = json.load(f)
 
