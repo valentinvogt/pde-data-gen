@@ -2,9 +2,10 @@
 #SBATCH --job-name=eval
 #SBATCH --output=eval-%j.out
 #SBATCH --error=eval-%j.err
-#SBATCH --cpus-per-task=50
+#SBATCH --cpus-per-task=4
 #SBATCH --mem-per-cpu=4096
-#SBATCH --time=23:00:00
+#SBATCH --time=12:00:00
+##SBATCH --mail-type=END
 
 module load stack/2024-06
 module load gcc/12.2.0
@@ -15,10 +16,12 @@ module load hdf5/1.14.3
 module load netcdf-c/4.9.2
 module load python/3.11.6
 
+source .env
 HDF5_USE_FILE_LOCKING=FALSE
 
-MODEL=bruss
-DATASET=param_sweep_mock
-python3 src/classify.py --model $MODEL --ds_id $DATASET --time_ratio 0.2
+MODEL=gray_scott
+DATASET=gs_pt
+python3 scripts/consolidate_old_format.py $WORKDIR/data/$MODEL/$DATASET
+# python3 src/classify.py --model $MODEL --ds_id $DATASET --time_ratio 0.2
 # NUM_SNAPSHOTS=10
-# python3 scripts/process_dataset_for_training.py /cluster/work/math/vogtva/data/$MODEL/$DATASET/_dataset.nc --num_snapshots $NUM_SNAPSHOTS
+# python3 scripts/process_dataset_for_training.py $WORKDIR/data/$MODEL/$DATASET/_dataset.nc --num_snapshots $NUM_SNAPSHOTS

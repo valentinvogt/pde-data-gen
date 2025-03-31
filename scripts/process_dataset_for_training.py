@@ -4,6 +4,7 @@ import argparse
 import os
 import shutil
 
+
 def reshape_data(ds):
     x_size = ds.sizes["x_size_and_boundary"]
     ny_coupled = ds.sizes["n_coupled_and_y_size_and_boundary"]
@@ -153,7 +154,14 @@ if __name__ == "__main__":
     outfile_zarr = outfile_nc.replace(".nc", ".zarr")
 
     ds = xr.open_dataset(args.filename)
-    ds = ds.chunk({"run": 100, "snapshot": 10, "x_size_and_boundary": 10, "n_coupled_and_y_size_and_boundary": 10})
+    ds = ds.chunk(
+        {
+            "run": 100,
+            "snapshot": 10,
+            "x_size_and_boundary": 10,
+            "n_coupled_and_y_size_and_boundary": 10,
+        }
+    )
     # Extract dimensions
     n_runs = ds.sizes["run"]
     n_snapshots = ds.sizes["snapshot"]

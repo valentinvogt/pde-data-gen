@@ -18,39 +18,39 @@ module load openmpi/4.1.6
 module load netcdf-c/4.9.2
 module load python/3.11.6
 
-DATAPATH="/cluster/work/math/vogtva/data"
+source .env
 
 # ADAPT THESE
 model="gray_scott"
 dataset_id="gs_pt"
 
-WORKDIR="$DATAPATH/$model/$dataset_id"
-echo $WORKDIR
+DATAPATH="$WORKDIR/data/$model/$dataset_id"
+echo $DATAPATH
 # Check if we're using the consolidated file approach
-if [[ -f "$WORKDIR/_dataset.nc" ]]; then
+if [[ -f "$DATAPATH/_dataset.nc" ]]; then
     echo "Using consolidated output approach"
-    
-    for file in "$WORKDIR"/*.nc; do
+
+    for file in "$DATAPATH"/*.nc; do
         # Skip files that aren't input files
         if [[ "$file" == *_output.nc || "$file" == *_dataset.nc ]]; then
             continue
         fi
-        
+
         # echo "Processing $file"
         build/run_from_netcdf "$file" 1
     done
-    python scripts/consolidate_outputs.py $WORKDIR/_dataset.nc
-    
+    python scripts/consolidate_outputs.py $DATAPATH/_dataset.nc
+
 else
     # Original approach - process each file individually
     echo "Using original individual files approach"
-    
-    for file in "$WORKDIR"/*.nc; do
+
+    for file in "$DATAPATH"/*.nc; do
         # Skip output files
         if [[ "$file" == *_output.nc ]]; then
             continue
         fi
-        
+
         build/run_from_netcdf "$file" 1
     done
 fi
