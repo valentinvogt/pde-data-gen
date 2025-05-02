@@ -102,8 +102,8 @@ def steady_state_plus_noise(
 
 
 def get_ic_function(
-    model: str, A: float, B: float, ic_params: InitialCondition
+    model: str, A: float, B: float, ic_params: InitialCondition, seed: float
 ) -> Callable:
     if isinstance(ic_params, PointSourcesIC):
         return partial(initial_sparse_sources, sparsity=ic_params.density)
-    return partial(steady_state_plus_noise, params=(A, B), ic_params=ic_params)
+    return partial(steady_state_plus_noise, params=(A, B), ic_params=ic_params, ic_seed=seed)
