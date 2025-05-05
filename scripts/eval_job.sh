@@ -2,10 +2,10 @@
 #SBATCH --job-name=eval
 #SBATCH --output=eval-%j.out
 #SBATCH --error=eval-%j.err
-#SBATCH --cpus-per-task=4
-#SBATCH --mem-per-cpu=4096
+#SBATCH --cpus-per-task=12
+#SBATCH --mem-per-cpu=8192
 #SBATCH --time=23:00:00
-##SBATCH --mail-type=END
+#SBATCH --mail-type=END
 
 module load stack/2024-06
 module load gcc/12.2.0
@@ -30,4 +30,5 @@ DATASET=param_sweep
 
 #--- Process for training
 NUM_SNAPSHOTS=10
-python3 scripts/process_dataset_for_training.py $WORKDIR/data/$MODEL/$DATASET/_dataset.nc --num_snapshots $NUM_SNAPSHOTS
+# --num_snapshots $NUM_SNAPSHOTS
+python3 scripts/process_dataset_for_training.py $SCRATCHDIR/data/$MODEL/$DATASET/_dataset.nc  --output_file $SCRATCHDIR/data/$MODEL/$DATASET/_dataset_processed.nc

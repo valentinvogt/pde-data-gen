@@ -21,10 +21,10 @@ module load python/3.11.6
 source .env
 
 # ADAPT THESE
-model="gray_scott"
-dataset_id="gs_pt"
+model="bruss"
+dataset_id="stat_an"
 
-DATAPATH="$WORKDIR/data/$model/$dataset_id"
+DATAPATH="$SCRATCHDIR/data/$model/$dataset_id"
 echo $DATAPATH
 # Check if we're using the consolidated file approach
 if [[ -f "$DATAPATH/_dataset.nc" ]]; then

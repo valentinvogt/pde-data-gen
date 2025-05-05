@@ -46,9 +46,5 @@ The configuration schema follows the structure described in `scripts/config_file
 - `sim_params`: Core simulation parameters (Nx, dx, Nt, dt, n_snapshots)
 - `initial_conditions`: List of initial condition configurations
 - `sampling_std`: Parameter deviation for ball sampling
-- `num_samples_per_point`: Number of samples in each parameter ball
+- `num_samples_per_ball`: Number of samples in each parameter ball
 - `num_samples_per_ic`: Repetitions per initial condition
-
-## Advanced Usage
-
-For more advanced usage, refer to the [Hydra documentation](https://hydra.cc/docs/intro/).

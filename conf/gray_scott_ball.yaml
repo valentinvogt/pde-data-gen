@@ -35,5 +35,5 @@ sampling_std:
   Du: 0.1
   Dv: 0.1
 
-num_samples_per_point: 10
+num_samples_per_ball: 10
 num_samples_per_ic: 1

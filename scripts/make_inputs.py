@@ -24,6 +24,7 @@ from src.initial_conditions import (
     get_ic_function,
     InitialCondition,
     ic_from_dict,
+    NormalIC,
 )
 
 from src.dataset_manager import DatasetManager, create_metadata_file
@@ -57,9 +58,9 @@ def run_wrapper(
     input_filename = os.path.join(ds_info.output_dir, input_file)
     output_filename = input_filename.replace(".nc", "_output.nc")
 
-    ic_function = get_ic_function(model, A, B, initial_condition)
     if random_seed is None:
         random_seed = randint(0, 2**32 - 1)
+    ic_function = get_ic_function(model, A, B, initial_condition, random_seed)
 
     create_input_file(
         input_filename,
@@ -130,7 +131,7 @@ def sample_ball(
     path: str,
     initial_conditions: List[InitialCondition],
     sampling_std: ModelParams,
-    num_samples_per_point: int,
+    num_samples_per_ball: int,
     num_samples_per_ic: int,
 ):
     params = model_params.model_dump()
@@ -141,7 +142,7 @@ def sample_ball(
     sigma_Du = std_params["Du"] * Du
     sigma_Dv = std_params["Dv"] * Dv
 
-    for _ in range(num_samples_per_point):
+    for _ in range(num_samples_per_ball):
         A_new = A + uniform(-sigma_A, sigma_A)
         B_new = B + uniform(-sigma_B, sigma_B)
         Du_new = Du + uniform(-sigma_Du, sigma_Du)
@@ -165,7 +166,7 @@ def ball_sampling(
     dataset_info: DatasetInfo,
     initial_conditions: List[InitialCondition],
     sampling_std: ModelParams,
-    num_samples_per_point: int,
+    num_samples_per_ball: int,
     num_samples_per_ic: int,
 ):
     path = dataset_info.output_dir
@@ -184,7 +185,7 @@ def ball_sampling(
             path,
             initial_conditions,
             sampling_std,
-            num_samples_per_point,
+            num_samples_per_ball,
             num_samples_per_ic,
         )
 
@@ -200,7 +201,7 @@ def parameters_from_grid(cfg: DictConfig) -> List[Dict[str, float]]:
             grid_params.Du,
             grid_params.Dv,
         ]
-        return [
+        params = [
             {"A": A, "B": B, "Du": Du, "Dv": Dv}
             for A, B, Du, Dv in product(*param_ranges)
         ]
@@ -213,14 +214,20 @@ def parameters_from_grid(cfg: DictConfig) -> List[Dict[str, float]]:
                         B = A * B_over_A
                         Dv = Du * Dv_over_Du
                         params.append({"A": A, "B": B, "Du": Du, "Dv": Dv})
-        return params
     else:
         raise ValueError(f"Invalid range type: {grid_mode}")
 
+    return params
 
-def parameters_from_df(df_path: str) -> pd.DataFrame:
+
+def parameters_from_df(df_path: str) -> List[Dict[str, float]]:
     df = pd.read_csv(df_path)
-    df = df[["A", "B", "Du", "Dv"]]
+    cols = ["A", "B", "Du", "Dv"]
+    if "seed" in df.columns:
+        cols.append("seed")
+    if "ic_std" in df.columns:
+        cols.append("ic_std")
+    df = df[cols]
     return df.to_dict(orient="records")
 
 
@@ -277,16 +284,12 @@ def main(cfg: DictConfig):
         output_dir=output_dir,
     )
 
-    random_seed = None
-    if "random_seed" in cfg:
-        random_seed = cfg.random_seed
-
+    num_samples_per_ic = cfg.num_samples_per_ic
     # dataset sampling strategy based on configuration
     if dataset_type == "ball":
         sampling_std = ModelParams(**cfg.sampling_std)
         centers = [ModelParams(**center) for center in param_grid]
-        num_samples_per_point = cfg.num_samples_per_point
-        num_samples_per_ic = cfg.num_samples_per_ic
+        num_samples_per_ball = cfg.num_samples_per_ball
 
         ball_sampling(
             centers,
@@ -294,25 +297,43 @@ def main(cfg: DictConfig):
             dataset_info,
             initial_conditions,
             sampling_std,
-            num_samples_per_point,
+            num_samples_per_ball,
             num_samples_per_ic,
         )
     elif dataset_type == "one_trajectory":
         n = len(param_grid)
         j = 0
-        for i, center in enumerate(param_grid):
+        for i, params in enumerate(param_grid):
             if i == j:
                 print(int(np.round(100 * j / n)), "%")
                 j += np.round(0.1 * n)
             for ic in initial_conditions:
-                run_wrapper(
-                    ModelParams(**center),
-                    sim_params,
-                    ic,
-                    dataset_info,
-                    run_id=str(uuid4()),
-                    random_seed=random_seed,
-                )
+                for _ in range(num_samples_per_ic):
+                    run_wrapper(
+                        ModelParams(**params),
+                        sim_params,
+                        ic,
+                        dataset_info,
+                        run_id=str(uuid4()),
+                        random_seed=None,
+                    )
+    # elif dataset_type == "recreate":
+    #     n = len(param_grid)
+    #     j = 0
+    #     for i, params in enumerate(param_grid):
+    #         seed = params.pop("seed")
+    #         ic_std = params.pop("ic_std")
+    #         if i == j:
+    #             print(int(np.round(100 * j / n)), "%")
+    #             j += np.round(0.1 * n)
+    #         run_wrapper(
+    #             ModelParams(**params),
+    #             sim_params,
+    #             NormalIC(sigma_u=ic_std, sigma_v=ic_std),
+    #             dataset_info,
+    #             run_id=str(uuid4()),
+    #             random_seed=seed,
+    #         )
     else:
         raise ValueError(f"Invalid run_type: {dataset_type}")
 

@@ -148,10 +148,19 @@ if __name__ == "__main__":
         default=0,
         help="Number of snapshots to downsample to",
     )
+    parser.add_argument(
+        "--output_file", type=str, default=None, help="Output file (optional)"
+    )
     args = parser.parse_args()
     n_snapshots_target = args.num_snapshots
-    outfile_nc = args.filename.replace(".nc", "_proc.nc")
-    outfile_zarr = outfile_nc.replace(".nc", ".zarr")
+
+    out_file = args.output_file
+    if out_file is None:
+        outfile_nc = args.filename.replace(".nc", "_proc.nc")
+        outfile_zarr = outfile_nc.replace(".nc", ".zarr")
+    else:
+        outfile_nc = out_file
+        outfile_zarr = outfile_nc.replace(".nc", ".zarr")
 
     ds = xr.open_dataset(args.filename)
     ds = ds.chunk(
@@ -188,35 +197,46 @@ if __name__ == "__main__":
             "B": ds["B"],
             "Du": ds["Du"],
             "Dv": ds["Dv"],
+            "initial_condition": ds["initial_condition"],
         }
     )
 
     print("Creating parameter component")
-    param_component = create_parameter_component(ds_new)
-    param_component = param_component.expand_dims(dim="component").assign_coords(
-        component=["param"]
-    )
+    # Old way: One channel piecewise
+    # param_component = create_parameter_component(ds_new)
+    # param_component = param_component.expand_dims(dim="component").assign_coords(
+    #     component=["param"]
+    # )
+    # data_with_param = xr.concat([ds_new["data"], param_component], dim="component")
 
-    data_with_param = xr.concat([ds_new["data"], param_component], dim="component")
+    # New way: separate channels
+    # template = ds_new["data"].isel(component=0)
+    # data_with_param = ds_new["data"]
+    # for var in ["A", "B", "Du", "Dv"]:
+    #     param_comp = xr.ones_like(template)
+    #     param_comp *= ds_new[var]
+    #     data_with_param = xr.concat([data_with_param, param_comp], dim="component")
 
-    ds_final = xr.Dataset(
-        data_vars={
-            "data": data_with_param,
-            "A": ds["A"],
-            "B": ds["B"],
-            "Du": ds["Du"],
-            "Dv": ds["Dv"],
-        }
-    )
+    # ds_final = xr.Dataset(
+    #     data_vars={
+    #         "data": data_with_param,
+    #         "A": ds["A"],
+    #         "B": ds["B"],
+    #         "Du": ds["Du"],
+    #         "Dv": ds["Dv"],
+    #     }
+    # )
+    ds_final = ds_new
     ds_final.rename({"run": "trajectory"})
     ds_final = ds_final.chunk({"Nx": 10, "Ny": 10})
     # At this point, no computation has been done yet
     # To actually compute and save the result:
-    # ds_final.to_netcdf(outfile)
     print("Writing to file")
-    if os.path.exists(outfile_zarr):
-        shutil.rmtree(outfile_zarr)
+    ds_final.to_netcdf(outfile_nc)
 
-    ds_final.to_zarr(outfile_zarr)
+    # if os.path.exists(outfile_zarr):
+    #     shutil.rmtree(outfile_zarr)
+
+    # ds_final.to_zarr(outfile_zarr)
 
     print("Done")

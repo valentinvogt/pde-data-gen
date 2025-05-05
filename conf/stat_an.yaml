@@ -4,12 +4,12 @@ defaults:
   - _self_
 
 # Sample dataset configuration for multiple models and parameter spaces
-dataset_id: phase_transition2
+dataset_id: stat_an
 dataset_type: one_trajectory
 center_definition: from_df
-df_path: data/pt_larger.csv
+workdir_env_var: SCRATCHDIR # An environment variable of this name should exist
+df_path: "data/rep_samples.csv"
 
-# Simulation parameters for higher resolution
 sim_params:
   Nx: 128
   dx: 1.0
@@ -17,17 +17,14 @@ sim_params:
   dt: 0.0025
   n_snapshots: 100
 
-# Multiple initial conditions to test different patterns
 initial_conditions:
   - type: normal
     sigma_u: 0.1
     sigma_v: 0.1
+  - type: normal
+    sigma_u: 0.2
+    sigma_v: 0.2
 
-# Sampling parameters
-sampling_std:
-  A: 0.05
-  B: 0.05
-  Du: 0.05
-  Dv: 0.05
-num_samples_per_ball: 1
-num_samples_per_ic: 1
+
+# num_samples_per_ball: 3
+num_samples_per_ic: 20

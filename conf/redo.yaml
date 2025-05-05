@@ -34,5 +34,5 @@ sim_params:
 #   Du: 0.05
 #   Dv: 0.05
 
-# num_samples_per_point: 3
+# num_samples_per_ball: 3
 # num_samples_per_ic: 1
