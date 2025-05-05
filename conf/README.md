@@ -37,10 +37,10 @@ The configuration schema follows the structure described in `scripts/config_file
 
 - `model`: Model type (e.g., "bruss", "gray_scott", "fhn")
 - `ds_id`: Unique identifier for the dataset
-- `ds_type`: Sampling approach ("one_trajectory" or "ball")
-- `workdir_env_var`: Specifies the environment variable containing the path to the working directory (note that the actual outputs go into $workdir_env_var/data/<model>/ds_id/)
+- `ds_type`: Sampling approach ("ball", "multi_ic" or "all_fixed").
+- `workdir_env_var`: Specifies the environment variable containing the path to the working directory (note that the actual outputs go into `$workdir_env_var/data/\<model\>/ds_id`)
 - `center_definition`: Method for defining parameter centers ("from_df" or "from_grid")
-- `df_path`: Path to parameter CSV (required when center_definition="from_df")
+- `df_path`: Path to parameter CSV (required when `center_definition="from_df"`)
 - `grid_mode`: Method for grid parameter specification ("absolute" or "relative")
 - `grid_params`: Grid parameter values
 - `sim_params`: Core simulation parameters (Nx, dx, Nt, dt, n_snapshots)
@@ -48,3 +48,8 @@ The configuration schema follows the structure described in `scripts/config_file
 - `sampling_std`: Parameter deviation for ball sampling
 - `num_samples_per_ball`: Number of samples in each parameter ball
 - `num_samples_per_ic`: Repetitions per initial condition
+
+### `ds_type`
+- `ball` = parameters are uniformly sampled from a hypercube (in parameter space) around each given parameter set. Loops over ICs and seeds, resulting in `param_count * num_samples_per_ball * num_samples_per_ic` trajectories, where `param_count` is the number of rows in the df or the result from grid_mode
+- `multi_ic`: calculates trajectories for each given parameter set. Loops over ICs and seeds, `param_count * num_samples_per_ic` trajectories.
+- `all_fixed`: requires `from_df` and column `initial_condition` to be in the df, and optionally `seed`. Exactly one trajectory per df row.

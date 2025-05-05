@@ -10,7 +10,6 @@ center_definition: from_df
 df_path: data/varied_points.csv
 workdir_env_var: WORKDIR # An environment variable of this name should exist
 
-# Simulation parameters for higher resolution
 sim_params:
   Nx: 256
   dx: 0.5

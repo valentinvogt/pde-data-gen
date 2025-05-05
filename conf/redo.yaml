@@ -10,7 +10,6 @@ center_definition: from_df
 workdir_env_var: SCRATCHDIR # An environment variable of this name should exist
 df_path: "data/ps_with_seed.csv"
 
-# Simulation parameters for higher resolution
 sim_params:
   Nx: 128
   dx: 1.0

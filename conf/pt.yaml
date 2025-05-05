@@ -5,11 +5,10 @@ defaults:
 
 # Sample dataset configuration for multiple models and parameter spaces
 dataset_id: phase_transition2
-dataset_type: one_trajectory
+dataset_type: multi_ic
 center_definition: from_df
 df_path: data/pt_larger.csv
 
-# Simulation parameters for higher resolution
 sim_params:
   Nx: 128
   dx: 1.0

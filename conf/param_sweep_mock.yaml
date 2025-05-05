@@ -10,7 +10,6 @@ center_definition: from_df
 workdir_env_var: WORKDIR # An environment variable of this name should exist
 df_path: "data/param_sweep.csv"
 
-# Simulation parameters for higher resolution
 sim_params:
   Nx: 128
   dx: 1.0
