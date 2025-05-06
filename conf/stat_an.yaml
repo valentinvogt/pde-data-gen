@@ -27,4 +27,4 @@ initial_conditions:
 
 
 # num_samples_per_ball: 3
-num_samples_per_ic: 20
+num_samples_per_ic: 100

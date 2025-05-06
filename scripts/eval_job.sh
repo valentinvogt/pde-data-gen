@@ -20,15 +20,15 @@ source .env
 HDF5_USE_FILE_LOCKING=FALSE
 
 MODEL=bruss
-DATASET=param_sweep
+DATASET=stat_an
 
 #--- Consolidate
 # python3 scripts/consolidate_old_format.py $WORKDIR/data/$MODEL/$DATASET
 
-#--- Classify
-# python3 src/classify.py --model $MODEL --ds_id $DATASET --time_ratio 0.2
+#--- Classify 
+python3 src/classify.py --model $MODEL --ds_id $DATASET --time_ratio 0.2 --directory_var SCRATCHDIR
 
 #--- Process for training
-NUM_SNAPSHOTS=10
+# NUM_SNAPSHOTS=10
 # --num_snapshots $NUM_SNAPSHOTS
-python3 scripts/process_dataset_for_training.py $SCRATCHDIR/data/$MODEL/$DATASET/_dataset.nc  --output_file $SCRATCHDIR/data/$MODEL/$DATASET/_dataset_processed.nc
+# python3 scripts/process_dataset_for_training.py $SCRATCHDIR/data/$MODEL/$DATASET/_dataset.nc  --output_file $SCRATCHDIR/data/$MODEL/$DATASET/_dataset_processed.nc

@@ -7,7 +7,8 @@
 #SBATCH --cpus-per-task=2
 #SBATCH --gpus-per-node=4
 #SBATCH --mem-per-cpu=8192
-#SBATCH --time=6:00:00
+#SBATCH --time=28:00:00
+#SBATCH --mail-type=END
 
 module load stack/2024-06
 module load gcc/12.2.0
