@@ -210,22 +210,22 @@ if __name__ == "__main__":
     # data_with_param = xr.concat([ds_new["data"], param_component], dim="component")
 
     # New way: separate channels
-    # template = ds_new["data"].isel(component=0)
-    # data_with_param = ds_new["data"]
-    # for var in ["A", "B", "Du", "Dv"]:
-    #     param_comp = xr.ones_like(template)
-    #     param_comp *= ds_new[var]
-    #     data_with_param = xr.concat([data_with_param, param_comp], dim="component")
+    template = ds_new["data"].isel(component=0)
+    data_with_param = ds_new["data"]
+    for var in ["A", "B", "Du", "Dv"]:
+        param_comp = xr.ones_like(template)
+        param_comp *= ds_new[var]
+        data_with_param = xr.concat([data_with_param, param_comp], dim="component")
 
-    # ds_final = xr.Dataset(
-    #     data_vars={
-    #         "data": data_with_param,
-    #         "A": ds["A"],
-    #         "B": ds["B"],
-    #         "Du": ds["Du"],
-    #         "Dv": ds["Dv"],
-    #     }
-    # )
+    ds_final = xr.Dataset(
+        data_vars={
+            "data": data_with_param,
+            "A": ds["A"],
+            "B": ds["B"],
+            "Du": ds["Du"],
+            "Dv": ds["Dv"],
+        }
+    )
     ds_final = ds_new
     ds_final.rename({"run": "trajectory"})
     ds_final = ds_final.chunk({"Nx": 10, "Ny": 10})
