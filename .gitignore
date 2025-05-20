@@ -16,3 +16,6 @@ outputs/
 
 *.zarr
 *.nc
+*.npy
+
+*.gif

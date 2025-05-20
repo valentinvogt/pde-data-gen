@@ -1,14 +1,54 @@
 import netCDF4 as nc
 import numpy as np
 from numpy.linalg import norm
+from skimage.feature import graycomatrix, graycoprops
 
 import sys
 import os
 import pandas as pd
 import argparse
-from scipy.fft import fft
-
+from scipy.fft import fft, fft2, fftshift
+from sklearn.decomposition import PCA
+from sklearn.preprocessing import StandardScaler
+from sklearn.cluster import KMeans
 from src.db_tools import Dataset, get_dataset
+import xarray as xr
+
+def fft_features(img):
+    f = fft2(img)
+    fshift = fftshift(f)
+    mag = np.abs(fshift)
+    mag_log = np.log1p(mag)
+    return mag_log
+
+
+def classify_pca_fft(frames, n_components=10, n_clusters=3):
+    """
+    Classify images using PCA and FFT features
+    """
+    # Apply FFT to all frames
+    fft_images = np.array([fft_features(img) for img in frames])
+
+    # Flatten and apply PCA
+    X_fft = fft_images.reshape(len(frames), -1)
+    X_std = StandardScaler().fit_transform(X_fft)
+    X_pca = PCA(n_components=n_components).fit_transform(X_std)
+
+    # Apply KMeans clustering
+    labels = KMeans(n_clusters=n_clusters).fit_predict(X_pca)
+
+    return labels
+
+
+def classify_pca(ds: Dataset, n_components=10, n_clusters=3):
+    """
+    Classify images using PCA features
+    """
+    # Load final frames
+    dataset = xr.open_dataset(ds.ds_file)
+    frames = dataset["data"][:, -1, :, 0::2].values
+
+    return classify_pca_fft(frames, n_components, n_clusters)
 
 def compute_classification_metrics(
     ds: Dataset, time_ratio=0.1
@@ -69,6 +109,30 @@ def compute_classification_metrics(
         fft_u = np.abs(fft(u_avg - u_ss)) / len(u_avg)
         fft_u[0] = 0  # Ignore DC component
 
+        final_u = u[-1, :, :]
+        f_transform = fftshift(np.abs(fft2(final_u)))
+        power_spectrum = f_transform**2
+        
+        # Calculate radial profile (for isotropy analysis)
+        h, w = final_u.shape
+        center_y, center_x = h // 2, w // 2
+        y, x = np.ogrid[-center_y:h-center_y, -center_x:w-center_x]
+        # Calculate directional variance in Fourier domain
+        theta = np.arctan2(y, x)
+        theta_bins = np.linspace(-np.pi, np.pi, 36)  # 10-degree bins
+        directional_power = []
+        
+        for j in range(len(theta_bins)-1):
+            mask = (theta >= theta_bins[j]) & (theta < theta_bins[j+1])
+            directional_power.append(np.sum(power_spectrum[mask]))
+        
+        directional_power = np.array(directional_power) / (np.sum(directional_power) + 1e-10)
+        
+        gray_uint8 = (final_u * 255).astype(np.uint8)
+        glcm = graycomatrix(gray_uint8, distances=[1, 5, 10], angles=[0, np.pi/4, np.pi/2, 3*np.pi/4], 
+            levels=256, symmetric=True, normed=True)
+        glcm_energy = np.mean(graycoprops(glcm, 'energy'))
+        
         rel_std_u = np.std(u, axis=(1, 2)) / np.mean(u, axis=(1, 2))
         rel_std_v = np.std(v, axis=(1, 2)) / np.mean(v, axis=(1, 2))
         rel_std_u_mean = np.mean(rel_std_u[-starting_idx:])
@@ -88,24 +152,13 @@ def compute_classification_metrics(
         df.at[i, "max_v"] = max_v
         df.at[i, "rel_std_u"] = rel_std_u_mean
         df.at[i, "rel_std_v"] = rel_std_v_mean
+        df.at[i, "dir_var"] = np.var(directional_power)
+        df.at[i, "glcm_energy"] = glcm_energy
 
-    for col in [
-        "mean_deviation",
-        "std_deviation",
-        "max_dx",
-        "mean_dx",
-        "max_dt",
-        "mean_dt",
-        "dominant_power",
-        "total_power",
-        "max_u",
-        "max_v",
-        "rel_std_u",
-        "rel_std_v",
-    ]:
-        df[col] = df[col].astype(float)
-        df[df["has_nans"]][col] = 0
-        ds.add_column(col, df[col].to_numpy())
+    for col in df.columns:
+        if col not in ds.df.columns:
+            ds.add_column(col, df[col].values, write_into_nc=False)
+
     ds.dataset.close()
     return ds
 
@@ -168,6 +221,8 @@ if __name__ == "__main__":
     directory_var = args.directory_var
 
     ds, _ = get_dataset(model, ds_id, directory_var)
-
+    print(ds.ds_file)
     compute_classification_metrics(ds, time_ratio=time_ratio)
+    labels = classify_pca(ds, n_components=10, n_clusters=3)
+    ds.add_column("pca_label", labels, write_into_nc=False)
     print(f"Added classification metrics to {ds.ds_file}")

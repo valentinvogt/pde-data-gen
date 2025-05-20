@@ -44,19 +44,27 @@ class Dataset:
     for the creation of the consolidated NetCDF file.
     """
 
-    def __init__(self, data_dir, model, ds_id):
+    def __init__(self, data_dir, model, ds_id, ds_file="_dataset.nc"):
         self.data_dir = data_dir
         self.model = model
         self.ds_id = ds_id
         path = os.path.join(data_dir, model, ds_id)
-        self.ds_file = os.path.join(path, "_dataset.nc")
+        self.ds_file = os.path.join(path, ds_file)
         if not os.path.exists(self.ds_file):
             raise FileNotFoundError(self.ds_file)
         self.dataset = nc.Dataset(self.ds_file, "a")
-        self.df = df_from_nc(self.dataset)
+        
+        self.df_file = self.ds_file.replace(".nc", ".csv")
+        if os.path.exists(self.df_file):
+            self.df = pd.read_csv(self.df_file)
+            self.df["idx"] = self.df.index
+        else:
+            self.df = df_from_nc(self.dataset)
+            self.df["idx"] = self.df.index
+            self.df.to_csv(self.df_file, index=False)
+        
         self.df["filename"] = self.df["output_file"]
         # self.df.drop(columns=["output_file"], inplace=True)
-        self.df["idx"] = self.df.index
 
     def get_data(self, row):
         if isinstance(row, (int, np.int64)):
@@ -71,12 +79,15 @@ class Dataset:
         data = self.dataset.variables["data"][idx, :, :, :]
         return data
 
-    def add_column(self, column_name, values, exclude_flag="has_nans"):
+    def add_column(self, column_name, values, write_into_nc=False):
         self.df[column_name] = values
-        if column_name not in self.dataset.variables:
-            self.dataset.createVariable(column_name, "f8", ("run",))
-        self.dataset.variables[column_name][:] = values
-
+        if write_into_nc:
+            if column_name not in self.dataset.variables:
+                self.dataset.createVariable(column_name, "f8", ("run",))
+            self.dataset.variables[column_name][:] = values
+        else:
+            self.df.to_csv(self.df_file, index=False)
+        print("created column", column_name)
 
 def filter_dataset(dataset: Dataset, df) -> Dataset:
     """
@@ -84,7 +95,6 @@ def filter_dataset(dataset: Dataset, df) -> Dataset:
 
     Args:
         dataset: The original Dataset object.
-        filter_func: A function that takes a DataFrame row and returns True if the row should be included.
 
     Returns:
         A new Dataset object with the filtered DataFrame.
@@ -232,10 +242,10 @@ def plot(data, global_min, global_max):
     fig, axes = plt.subplots(1, 2, figsize=(12, 6), gridspec_kw={"wspace": 0.4})
     ims = []
     for coupled_idx, ax in enumerate(axes):
-        matrix = data[0, :, 0::2]
+        matrix = data[-1, :, coupled_idx::2]
         matrix /= np.max(matrix)
         im = ax.imshow(matrix, cmap="viridis", aspect="equal", vmin=0, vmax=1)
-        ax.set_title(f"Snapshot 1, {'u' if coupled_idx == 0 else 'v'}")
+        ax.set_title(f"Snapshot -1, {'u' if coupled_idx == 0 else 'v'}")
         ims.append(im)
     return fig, axes, ims
 

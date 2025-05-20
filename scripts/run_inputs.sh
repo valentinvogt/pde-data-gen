@@ -23,7 +23,7 @@ source .env
 
 # ADAPT THESE
 model="bruss"
-dataset_id="stat_an"
+dataset_id="default_bruss"
 
 DATAPATH="$SCRATCHDIR/data/$model/$dataset_id"
 echo $DATAPATH

@@ -18,4 +18,4 @@
 HDF5_USE_FILE_LOCKING=FALSE
 set -a && source .env
 
-python3 scripts/make_inputs.py --config-name=stat_an
+python3 scripts/make_inputs.py --config-name=config
