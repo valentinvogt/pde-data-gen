@@ -107,7 +107,7 @@ def filter_dataset(dataset: Dataset, df) -> Dataset:
     return new_dataset
 
 
-def get_dataset(model, ds_id, directory_var="WORKDIR") -> Tuple[Dataset, str]:
+def get_dataset(model, ds_id, directory_var="WORKDIR", dataset_file="_dataset.nc") -> Tuple[Dataset, str]:
     """
     Load a dataset based on model and dataset ID from the environment directory.
     
@@ -122,7 +122,7 @@ def get_dataset(model, ds_id, directory_var="WORKDIR") -> Tuple[Dataset, str]:
     load_dotenv()
     data_dir = os.getenv(directory_var)
     output_dir = os.path.join(data_dir, "out")
-    ds = Dataset(os.path.join(data_dir, "data"), model, ds_id)
+    ds = Dataset(os.path.join(data_dir, "data"), model, ds_id, dataset_file)
     return ds, output_dir
 
 

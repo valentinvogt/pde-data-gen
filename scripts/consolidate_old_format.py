@@ -5,7 +5,7 @@ import netCDF4 as nc
 import numpy as np
 from glob import glob
 from src.dataset_manager import DatasetManager
-
+import xarray as xr
 
 def consolidate_old_format(input_dir, output_file=None):
     """
@@ -67,6 +67,11 @@ def consolidate_old_format(input_dir, output_file=None):
         output_file_path = metadata.get("filename", "")
         if not os.path.exists(output_file_path):
             print(f"Warning: Output file {output_file_path} not found, skipping")
+            continue
+        
+        ds = xr.open_dataset(output_file_path)
+        if np.any(np.isnan(ds["data"].values)):
+            print(f"Warning: Output file {output_file_path} contains NaN values, skipping")
             continue
 
         print(

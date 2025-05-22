@@ -23,7 +23,7 @@ source .env
 
 # ADAPT THESE
 model="bruss"
-dataset_id="default_bruss"
+dataset_id="rough2"
 
 DATAPATH="$SCRATCHDIR/data/$model/$dataset_id"
 echo $DATAPATH
@@ -54,4 +54,5 @@ else
 
         build/run_from_netcdf "$file" 1
     done
+    python3 scripts/consolidate_old_format.py $DATAPATH
 fi
