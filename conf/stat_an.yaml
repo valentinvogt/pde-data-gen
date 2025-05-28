@@ -4,11 +4,11 @@ defaults:
   - _self_
 
 # Sample dataset configuration for multiple models and parameter spaces
-dataset_id: stat_an
+dataset_id: stat_one
 dataset_type: multi_ic
 center_definition: from_df
 workdir_env_var: SCRATCHDIR # An environment variable of this name should exist
-df_path: "data/rep_samples.csv"
+df_path: "data/one.csv"
 
 sim_params:
   Nx: 128

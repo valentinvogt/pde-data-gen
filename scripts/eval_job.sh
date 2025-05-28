@@ -20,17 +20,16 @@ source .env
 HDF5_USE_FILE_LOCKING=FALSE
 
 MODEL=bruss
-DATASET=rough
+DATASET=param_sweep
 
 #--- Consolidate
-# python3 scripts/consolidate_old_format.py $SCRATCHDIR/data/$MODEL/$DATASET
+# python3 scripts/consolidate_old_format.py $SCRATCHDIR/data/$MODEL/$DATASET --keep-nan
 
 #--- Classify 
-python3 src/classify.py --model $MODEL --ds_id $DATASET --time_ratio 0.2 --directory_var SCRATCHDIR
+# python3 src/classify.py --model $MODEL --ds_id $DATASET --time_ratio 0.2 --directory_var SCRATCHDIR
 
-#--- Process for training
+#--- Process for training --num_snapshots $NUM_SNAPSHOTS
 NUM_SNAPSHOTS=10
-# --num_snapshots $NUM_SNAPSHOTS
-# python3 scripts/process_dataset_for_training.py $SCRATCHDIR/data/$MODEL/$DATASET/_dataset.nc  --output_file $SCRATCHDIR/data/$MODEL/$DATASET/_dataset_processed.nc --num_snapshots $NUM_SNAPSHOTS
+python3 scripts/process_dataset_for_training.py $SCRATCHDIR/data/$MODEL/$DATASET/_dataset.nc  --output_file $SCRATCHDIR/data/$MODEL/$DATASET/_dataset_processed.nc --num_snapshots $NUM_SNAPSHOTS
 
 # python3 src/classify_pca.py

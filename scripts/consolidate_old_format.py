@@ -6,8 +6,9 @@ import numpy as np
 from glob import glob
 from src.dataset_manager import DatasetManager
 import xarray as xr
+import argparse
 
-def consolidate_old_format(input_dir, output_file=None):
+def consolidate_old_format(input_dir, output_file=None, keep_nan=False):
     """
     Consolidate files from an old dataset format into a new dataset file.
 
@@ -15,6 +16,7 @@ def consolidate_old_format(input_dir, output_file=None):
         input_dir: Directory containing .json files and their corresponding .nc files
         output_file: Path to the output consolidated file. If None, creates
                      _dataset.nc in the input_dir.
+        keep_nan: If True, include datasets that contain NaN values. If False, skip them.
     """
     # Find all JSON files in the input directory
     json_files = glob(os.path.join(input_dir, "*.json"))
@@ -28,7 +30,8 @@ def consolidate_old_format(input_dir, output_file=None):
 
     # Create output file if not specified
     if output_file is None:
-        output_file = os.path.join(input_dir, "_dataset.nc")
+        base_name = "_dataset_with_nan.nc" if keep_nan else "_dataset.nc"
+        output_file = os.path.join(input_dir, base_name)
 
     # Create the consolidated metadata file
     print(f"Creating consolidated file: {output_file}")
@@ -42,6 +45,7 @@ def consolidate_old_format(input_dir, output_file=None):
         "model": sample_json.get("model", ""),
         "dataset_id": sample_json.get("run_id", "old_dataset"),
         "dataset_type": "consolidated",
+        "keep_nan": 1 if keep_nan else 0
     }
 
     # Create initial dataset
@@ -65,12 +69,13 @@ def consolidate_old_format(input_dir, output_file=None):
 
         # Verify output file exists
         output_file_path = metadata.get("filename", "")
+        output_file_path = output_file_path.replace(".nc", ".nca")
         if not os.path.exists(output_file_path):
             print(f"Warning: Output file {output_file_path} not found, skipping")
             continue
         
         ds = xr.open_dataset(output_file_path)
-        if np.any(np.isnan(ds["data"].values)):
+        if np.any(np.isnan(ds["data"].values)) and not keep_nan:
             print(f"Warning: Output file {output_file_path} contains NaN values, skipping")
             continue
 
@@ -106,6 +111,7 @@ def consolidate_outputs(consolidated_file_path, valid_outputs):
 
         # Process the first output file to get dimensions
         first_output = valid_outputs[0]["filename"]
+        first_output = first_output.replace(".nc", ".nca")
 
         with nc.Dataset(first_output, "r") as ds:
             # Get metadata
@@ -140,7 +146,7 @@ def consolidate_outputs(consolidated_file_path, valid_outputs):
         # Process each run
         for run_idx, metadata in enumerate(valid_outputs):
             output_file = metadata["filename"]
-
+            output_file = output_file.replace(".nc", ".nca")
             # print(f"Processing run {run_idx+1}/{len(valid_outputs)}: {os.path.basename(output_file)}")
 
             # Open the output file
@@ -174,15 +180,15 @@ def consolidate_outputs(consolidated_file_path, valid_outputs):
 
 
 if __name__ == "__main__":
-    if len(sys.argv) < 2:
-        print("Usage: python consolidate_old_format.py <input_directory> [output_file]")
+    parser = argparse.ArgumentParser(description="Consolidate old format dataset files into a single netCDF file.")
+    parser.add_argument("input_dir", help="Directory containing .json files and their corresponding .nc files")
+    parser.add_argument("--output", "-o", help="Path to the output consolidated file")
+    parser.add_argument("--keep-nan", action="store_true", help="Include datasets that contain NaN values")
+    
+    args = parser.parse_args()
+
+    if not os.path.isdir(args.input_dir):
+        print(f"Error: Directory {args.input_dir} does not exist")
         sys.exit(1)
 
-    input_dir = sys.argv[1]
-    output_file = sys.argv[2] if len(sys.argv) > 2 else None
-
-    if not os.path.isdir(input_dir):
-        print(f"Error: Directory {input_dir} does not exist")
-        sys.exit(1)
-
-    consolidate_old_format(input_dir, output_file)
+    consolidate_old_format(args.input_dir, args.output, args.keep_nan)

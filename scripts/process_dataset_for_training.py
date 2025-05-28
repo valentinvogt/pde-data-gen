@@ -151,6 +151,11 @@ if __name__ == "__main__":
     parser.add_argument(
         "--output_file", type=str, default=None, help="Output file (optional)"
     )
+    parser.add_argument(
+        "--without_param",
+        action="store_true",
+        help="Add parameter component to the dataset",
+    )
     args = parser.parse_args()
     n_snapshots_target = args.num_snapshots
 
@@ -161,6 +166,10 @@ if __name__ == "__main__":
     else:
         outfile_nc = out_file
         outfile_zarr = outfile_nc.replace(".nc", ".zarr")
+
+    if os.path.exists(outfile_nc):
+        print(f"Output file {outfile_nc} already exists. Overwriting.")
+        os.remove(outfile_nc)
 
     ds = xr.open_dataset(args.filename)
     ds = ds.chunk(
@@ -210,23 +219,27 @@ if __name__ == "__main__":
     # data_with_param = xr.concat([ds_new["data"], param_component], dim="component")
 
     # New way: separate channels
-    template = ds_new["data"].isel(component=0)
-    data_with_param = ds_new["data"]
-    for var in ["A", "B", "Du", "Dv"]:
-        param_comp = xr.ones_like(template)
-        param_comp *= ds_new[var]
-        data_with_param = xr.concat([data_with_param, param_comp], dim="component")
+    if not args.without_param:
+        template = ds_new["data"].isel(component=0)
+        data_with_param = ds_new["data"]
+        for var in ["A", "B", "Du", "Dv"]:
+            param_comp = xr.ones_like(template)
+            param_comp *= ds_new[var]
+            data_with_param = xr.concat([data_with_param, param_comp], dim="component")
 
-    ds_final = xr.Dataset(
-        data_vars={
-            "data": data_with_param,
-            "A": ds["A"],
-            "B": ds["B"],
-            "Du": ds["Du"],
-            "Dv": ds["Dv"],
-        }
-    )
-    ds_final = ds_new
+        ds_final = xr.Dataset(
+            data_vars={
+                "data": data_with_param,
+                "A": ds["A"],
+                "B": ds["B"],
+                "Du": ds["Du"],
+                "Dv": ds["Dv"],
+            }
+        )
+    else:
+        ds_final = ds_new
+
+        
     ds_final.rename({"run": "trajectory"})
     ds_final = ds_final.chunk({"Nx": 10, "Ny": 10})
     # At this point, no computation has been done yet
