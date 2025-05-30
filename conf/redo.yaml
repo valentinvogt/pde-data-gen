@@ -4,11 +4,11 @@ defaults:
   - _self_
 
 # Sample dataset configuration for multiple models and parameter spaces
-dataset_id: recreate
-dataset_type: recreate
+dataset_id: osc
+dataset_type: all_fixed
 center_definition: from_df
 workdir_env_var: SCRATCHDIR # An environment variable of this name should exist
-df_path: "data/ps_with_seed.csv"
+df_path: "data/osc_with_seed.csv"
 
 sim_params:
   Nx: 128

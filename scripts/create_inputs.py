@@ -25,6 +25,7 @@ from src.initial_conditions import (
     InitialCondition,
     ic_from_dict,
     NormalIC,
+    get_ic_type
 )
 
 from src.dataset_manager import DatasetManager, create_metadata_file
@@ -96,6 +97,7 @@ def run_wrapper(
         "dt": dt,
         "Du": Du,
         "Dv": Dv,
+        "ic_type": get_ic_type(initial_condition),
         "initial_condition": ic_data,
         "random_seed": random_seed,
         "n_snapshots": n_snapshots,
@@ -220,8 +222,12 @@ def parameters_from_df(df_path: str) -> List[Dict[str, float]]:
     cols = ["A", "B", "Du", "Dv"]
     if "seed" in df.columns:
         cols.append("seed")
+    elif "random_seed" in df.columns:
+        df = df.rename(columns={"random_seed": "seed"})
+        cols.append("seed")
     if "initial_condition" in df.columns:
         cols.append("initial_condition")
+        cols.append("ic_type")
     df = df[cols]
     return df.to_dict(orient="records")
 
@@ -229,13 +235,13 @@ def parameters_from_df(df_path: str) -> List[Dict[str, float]]:
 @hydra.main(version_base=None, config_path="../conf", config_name="config")
 def main(cfg: DictConfig):
     load_dotenv()
-
     # Extract configuration
     model = cfg.model
     dataset_id = cfg.dataset_id
     dataset_type = cfg.dataset_type
     center_definition = cfg.center_definition
     workdir_env_var = cfg.workdir_env_var
+
     # Set up output directories
     data_dir = os.getenv(workdir_env_var)
     output_dir = os.path.join(data_dir, "data", model, dataset_id)
@@ -287,13 +293,13 @@ def main(cfg: DictConfig):
     n = len(param_grid)
     j = 0
     for i, params in enumerate(param_grid):
-        if i == j: # log progress
+        if i == j and n > 100:
             print(int(np.round(100 * j / n)), "%")
             j += np.round(0.1 * n)
 
         if dataset_type == "ball":
             sample_ball(
-                params,
+                ModelParams(**params),
                 sim_params,
                 dataset_info,
                 initial_conditions,
@@ -313,8 +319,12 @@ def main(cfg: DictConfig):
                         random_seed=None,
                     )
         elif dataset_type == "all_fixed":
-            seed = params.pop("seed")
-            ic = ic_from_dict(params.pop("initial_condition"))
+            if "seed" in params:
+                seed = params.pop("seed")
+            else:
+                seed = None
+            ic_type = params.pop("ic_type")
+            ic = ic_from_dict(params.pop("initial_condition"), ic_type)
             run_wrapper(
                 ModelParams(**params),
                 sim_params,

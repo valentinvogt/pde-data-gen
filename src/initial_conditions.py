@@ -3,7 +3,7 @@ from typing import Union, List, Callable, Literal, Dict
 import numpy as np
 from functools import partial
 from pydantic import BaseModel, Field
-
+import json
 
 class InitialCondition(BaseModel):
     pass
@@ -30,19 +30,24 @@ class HexPatternIC(InitialCondition):
     wavelength: float
 
 
-def ic_from_dict(d: Dict) -> InitialCondition:
-    type = d["type"]
-    d.pop("type")
-    if type == "normal":
+def ic_from_dict(d: Dict, ic_type: str = None) -> InitialCondition:
+    if type(d) is str:
+        s_fixed = d.replace('""', '"')
+        d = json.loads(s_fixed)
+    if ic_type is None:
+        ic_type = d.get("type", None)
+        if ic_type is None:
+            raise ValueError("ic_type must be passed or found in the dictionary.")
+    if ic_type == "normal":
         return NormalIC(**d)
-    elif type == "point_sources":
+    elif ic_type == "point_sources":
         return PointSourcesIC(**d)
-    elif type == "uniform":
+    elif ic_type == "uniform":
         return UniformIC(**d)
-    elif type == "hex_pattern":
+    elif ic_type == "hex_pattern":
         return HexPatternIC(**d)
     else:
-        raise ValueError(f"Unknown initial condition type: {type}")
+        raise ValueError(f"Unknown initial condition type: {ic_type}")
 
 
 def initial_sparse_sources(member, coupled_idx, x_position, y_position, sparsity):
@@ -107,3 +112,15 @@ def get_ic_function(
     if isinstance(ic_params, PointSourcesIC):
         return partial(initial_sparse_sources, sparsity=ic_params.density)
     return partial(steady_state_plus_noise, params=(A, B), ic_params=ic_params, ic_seed=seed)
+
+def get_ic_type(ic_params: InitialCondition) -> Literal["normal", "point_sources", "uniform", "hex_pattern"]:
+    if isinstance(ic_params, NormalIC):
+        return "normal"
+    elif isinstance(ic_params, PointSourcesIC):
+        return "point_sources"
+    elif isinstance(ic_params, UniformIC):
+        return "uniform"
+    elif isinstance(ic_params, HexPatternIC):
+        return "hex_pattern"
+    else:
+        raise ValueError(f"Unknown initial condition type: {type(ic_params)}")

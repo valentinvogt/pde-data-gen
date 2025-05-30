@@ -13,6 +13,8 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.cluster import KMeans
 from src.db_tools import Dataset, get_dataset
 import xarray as xr
+from skimage.filters import threshold_otsu
+from skimage.measure import label, regionprops
 
 def fft_features(img):
     f = fft2(img)
@@ -50,9 +52,89 @@ def classify_pca(ds: Dataset, n_components=10, n_clusters=3):
 
     return classify_pca_fft(frames, n_components, n_clusters)
 
-def compute_classification_metrics(
-    ds: Dataset, time_ratio=0.1
-) -> pd.DataFrame:
+def classify_pattern(ds: Dataset):
+    """
+    Classify images using PCA features
+    """
+    # Load final frames
+    dataset = xr.open_dataset(ds.ds_file)
+    frames = dataset["data"][:, -1, :, 0::2].values
+
+    return classify_brusselator_patterns(frames, 0.02)
+
+def classify_brusselator_patterns(data_array, alpha):
+    """
+    Classifies patterns in a series of 2D Brusselator frames as 'labyrinth' or 'dots'.
+
+    The classification is based on the ratio of the largest connected component's
+    area to the total image area.
+
+    Args:
+        data_array (np.ndarray): A 3D NumPy array of shape (num_traj, height, width)
+                                 containing the image data for each trajectory.
+                                 Pixel values are expected to be numerical.
+        alpha (float): The threshold for classification. If the normalized area
+                       of the largest component exceeds alpha, the pattern is
+                       classified as 'labyrinth'. Must be between 0.0 and 1.0.
+
+    Returns:
+        list: A list of strings, where each string is either 'labyrinth' or 'dots',
+              corresponding to the classification of each frame in data_array.
+
+    Raises:
+        ValueError: If input arguments are invalid (e.g., wrong data_array shape,
+                    invalid alpha value, non-positive image dimensions).
+    """
+    if not (isinstance(data_array, np.ndarray) and data_array.ndim == 3):
+        raise ValueError(
+            "Input data_array must be a 3D NumPy array of shape (num_traj, height, width)."
+        )
+    if not (isinstance(alpha, float) and 0.0 < alpha < 1.0):
+        raise ValueError(
+            "Alpha threshold must be a float strictly between 0.0 and 1.0."
+        )
+
+    num_traj, height, width = data_array.shape
+    if height <= 0 or width <= 0:
+        raise ValueError("Image dimensions (height, width) must be positive.")
+
+    classifications = []
+    total_area = float(height * width)
+
+    for i in range(num_traj):
+        frame = data_array[i]
+        A_max = 0.0
+        if frame.std() < 0.05:
+            classifications.append("const")
+            continue
+        if frame.min() == frame.max():
+            binary_image = np.zeros_like(frame, dtype=bool)
+        else:
+            try:
+                thresh = threshold_otsu(frame)
+                binary_image = frame > thresh
+            except ValueError:
+                binary_image = np.zeros_like(frame, dtype=bool)
+
+        if np.any(binary_image):
+            labeled_image = label(binary_image, connectivity=2, background=0)
+            props = regionprops(labeled_image)
+
+            if props:
+                component_areas = [prop.area for prop in props]
+                A_max = np.max(component_areas)
+
+        R_lc = A_max / total_area
+
+        if R_lc > alpha:
+            classifications.append("labyrinth")
+        else:
+            classifications.append("dots")
+
+    return classifications
+
+
+def compute_classification_metrics(ds: Dataset, time_ratio=0.1) -> pd.DataFrame:
     """
     Compute classification metrics for a given range of frames
     """
@@ -72,7 +154,7 @@ def compute_classification_metrics(
 
         num_snapshots = row["n_snapshots"]
         data = ds.get_data(i)
-        
+
         if np.any(data.mask):
             df.at[i, "has_nans"] = True
             continue
@@ -112,27 +194,35 @@ def compute_classification_metrics(
         final_u = u[-1, :, :]
         f_transform = fftshift(np.abs(fft2(final_u)))
         power_spectrum = f_transform**2
-        
+
         # Calculate radial profile (for isotropy analysis)
         h, w = final_u.shape
         center_y, center_x = h // 2, w // 2
-        y, x = np.ogrid[-center_y:h-center_y, -center_x:w-center_x]
+        y, x = np.ogrid[-center_y : h - center_y, -center_x : w - center_x]
         # Calculate directional variance in Fourier domain
         theta = np.arctan2(y, x)
         theta_bins = np.linspace(-np.pi, np.pi, 36)  # 10-degree bins
         directional_power = []
-        
-        for j in range(len(theta_bins)-1):
-            mask = (theta >= theta_bins[j]) & (theta < theta_bins[j+1])
+
+        for j in range(len(theta_bins) - 1):
+            mask = (theta >= theta_bins[j]) & (theta < theta_bins[j + 1])
             directional_power.append(np.sum(power_spectrum[mask]))
-        
-        directional_power = np.array(directional_power) / (np.sum(directional_power) + 1e-10)
-        
+
+        directional_power = np.array(directional_power) / (
+            np.sum(directional_power) + 1e-10
+        )
+
         gray_uint8 = (final_u * 255).astype(np.uint8)
-        glcm = graycomatrix(gray_uint8, distances=[1, 5, 10], angles=[0, np.pi/4, np.pi/2, 3*np.pi/4], 
-            levels=256, symmetric=True, normed=True)
-        glcm_energy = np.mean(graycoprops(glcm, 'energy'))
-        
+        glcm = graycomatrix(
+            gray_uint8,
+            distances=[1, 5, 10],
+            angles=[0, np.pi / 4, np.pi / 2, 3 * np.pi / 4],
+            levels=256,
+            symmetric=True,
+            normed=True,
+        )
+        glcm_energy = np.mean(graycoprops(glcm, "energy"))
+
         rel_std_u = np.std(u, axis=(1, 2)) / np.mean(u, axis=(1, 2))
         rel_std_v = np.std(v, axis=(1, 2)) / np.mean(v, axis=(1, 2))
         rel_std_u_mean = np.mean(rel_std_u[-starting_idx:])
@@ -222,7 +312,9 @@ if __name__ == "__main__":
 
     ds, _ = get_dataset(model, ds_id, directory_var)
     print(ds.ds_file)
-    compute_classification_metrics(ds, time_ratio=time_ratio)
-    labels = classify_pca(ds, n_components=10, n_clusters=3)
-    ds.add_column("pca_label", labels, write_into_nc=False)
+    # compute_classification_metrics(ds, time_ratio=time_ratio)
+    # labels = classify_pca(ds, n_components=10, n_clusters=3)
+    # ds.add_column("pca_label", labels, write_into_nc=False)
+    classes = classify_pattern(ds)
+    ds.add_column("pattern_class", classes, write_into_nc=False)
     print(f"Added classification metrics to {ds.ds_file}")
