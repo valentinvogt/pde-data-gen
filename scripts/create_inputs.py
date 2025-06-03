@@ -243,7 +243,7 @@ def main(cfg: DictConfig):
     workdir_env_var = cfg.workdir_env_var
 
     # Set up output directories
-    data_dir = os.getenv(workdir_env_var)
+    data_dir = os.getenv(workdir_env_var, ".")
     output_dir = os.path.join(data_dir, "data", model, dataset_id)
     os.makedirs(output_dir, exist_ok=True)
 
