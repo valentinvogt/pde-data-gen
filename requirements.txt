@@ -3,3 +3,4 @@ omegaconf
 netCDF4
 pandas
 python-dotenv
+pydantic
