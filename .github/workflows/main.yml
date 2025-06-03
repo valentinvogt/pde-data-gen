@@ -24,7 +24,9 @@ jobs:
           pip install hydra-core omegaconf netCDF4 pandas
 
       - name: Create mock dataset
-        run: python scripts/create_inputs.py --config-name=config
+        run: |
+          source .env
+          python scripts/create_inputs.py --config-name=config
 
   run_simulation:
     needs: create_dataset
