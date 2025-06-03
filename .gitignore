@@ -10,7 +10,7 @@ analysis/out
 out/
 outputs/
 *.egg-info
-
+data/bruss
 *.err
 *.out
 

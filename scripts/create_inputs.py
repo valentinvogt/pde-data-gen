@@ -60,7 +60,7 @@ def run_wrapper(
     output_filename = input_filename.replace(".nc", "_output.nc")
 
     if random_seed is None:
-        random_seed = randint(0, 2**32 - 1)
+        random_seed = randint(0, 2**31 - 1)
     ic_function = get_ic_function(model, A, B, initial_condition, random_seed)
 
     create_input_file(
@@ -110,8 +110,10 @@ def run_wrapper(
         log_dict["original_point"] = original_point.model_dump()
 
     dataset_file = ds_info.file
+    print("dataset file = ", dataset_file)
     with DatasetManager(dataset_file, "a") as dataset:
         run_index = dataset.get_run_count()
+        print(run_index)
         dataset.add_run_metadata(run_index, log_dict)
         log_dict["dataset_file"] = dataset_file
         log_dict["run_index"] = run_index
