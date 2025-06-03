@@ -20,10 +20,10 @@ source .env
 HDF5_USE_FILE_LOCKING=FALSE
 
 MODEL=bruss
-DATASET=param_sweep
+DATASET=grid
 
 #--- Consolidate
-# python3 scripts/consolidate_old_format.py $SCRATCHDIR/data/$MODEL/$DATASET --keep-nan
+# python3 scripts/consolidate_old_format.py $SCRATCHDIR/data/$MODEL/$DATASET
 
 #--- Classify 
 python3 src/classify.py --model $MODEL --ds_id $DATASET --time_ratio 0.2 --directory_var SCRATCHDIR

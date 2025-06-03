@@ -5,9 +5,9 @@
 #SBATCH --ntasks=1
 #SBATCH --nodes=1
 #SBATCH --cpus-per-task=2
-#SBATCH --gpus-per-node=4
+#SBATCH --gpus-per-node=2
 #SBATCH --mem-per-cpu=8192
-#SBATCH --time=28:00:00
+#SBATCH --time=10:00:00
 #SBATCH --mail-type=END
 
 module load stack/2024-06
@@ -23,7 +23,7 @@ source .env
 
 # ADAPT THESE
 model="bruss"
-dataset_id="transfer"
+dataset_id="default_bruss"
 
 DATAPATH="$SCRATCHDIR/data/$model/$dataset_id"
 echo $DATAPATH

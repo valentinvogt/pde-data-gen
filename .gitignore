@@ -19,3 +19,5 @@ outputs/
 *.npy
 
 *.gif
+pdg
+.github

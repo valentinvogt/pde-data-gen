@@ -69,10 +69,15 @@ def consolidate_old_format(input_dir, output_file=None, keep_nan=False):
 
         # Verify output file exists
         output_file_path = metadata.get("filename", "")
-        output_file_path = output_file_path.replace(".nc", ".nca")
+        # output_file_path = output_file_path.replace(".nc", ".nca")
         if not os.path.exists(output_file_path):
-            print(f"Warning: Output file {output_file_path} not found, skipping")
-            continue
+            path_nca = output_file_path.replace(".nc", ".nca")
+            if os.path.exists(path_nca):
+                output_file_path = path_nca
+                metadata["filename"] = path_nca
+            else:
+                print(f"Warning: Output file {output_file_path} not found, skipping")
+                continue
         
         ds = xr.open_dataset(output_file_path)
         if np.any(np.isnan(ds["data"].values)) and not keep_nan:
@@ -111,7 +116,6 @@ def consolidate_outputs(consolidated_file_path, valid_outputs):
 
         # Process the first output file to get dimensions
         first_output = valid_outputs[0]["filename"]
-        first_output = first_output.replace(".nc", ".nca")
 
         with nc.Dataset(first_output, "r") as ds:
             # Get metadata
@@ -146,7 +150,6 @@ def consolidate_outputs(consolidated_file_path, valid_outputs):
         # Process each run
         for run_idx, metadata in enumerate(valid_outputs):
             output_file = metadata["filename"]
-            output_file = output_file.replace(".nc", ".nca")
             # print(f"Processing run {run_idx+1}/{len(valid_outputs)}: {os.path.basename(output_file)}")
 
             # Open the output file

@@ -18,8 +18,4 @@ module load python/3.11.6
 HDF5_USE_FILE_LOCKING=FALSE
 set -a && source .env
 
-for DT in 0.0025 0.0015 0.001 0.0005; do
-    NT=$(echo "150 / $DT" | bc)
-    echo "Generating inputs for dt=$DT, Nt=$NT"
-    python3 scripts/create_inputs.py --config-name=redo 'sim_params={Nt:'$NT', dt:'$DT'}'
-done
+python3 scripts/create_inputs.py --config-name=grid

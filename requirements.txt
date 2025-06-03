@@ -1,0 +1,4 @@
+hydra-core
+omegaconf
+netCDF4
+pandas
