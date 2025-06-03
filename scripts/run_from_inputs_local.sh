@@ -3,7 +3,7 @@ model="bruss"
 dataset_id="$1"
 
 DATAPATH="./data/$model/$dataset_id"
-echo $DATAPATH
+echo "$DATAPATH"
 # Check if we're using the consolidated file approach
 if [[ -f "$DATAPATH/_dataset.nc" ]]; then
     echo "Using consolidated output approach"
