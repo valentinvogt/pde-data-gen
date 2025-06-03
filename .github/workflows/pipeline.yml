@@ -1,0 +1,73 @@
+name: PDE Data Generation Pipeline
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  create_dataset:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v3
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install hydra-core omegaconf netCDF4 pandas
+
+      - name: Create mock dataset
+        run: python scripts/create_inputs.py --config-name=config
+
+  run_simulation:
+    needs: create_dataset
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v3
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install hydra-core omegaconf netCDF4 pandas
+
+      - name: Run simulation
+        run: |
+          source scripts/.env
+          python scripts/run_from_inputs.sh
+
+  compute_metrics:
+    needs: run_simulation
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v3
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install hydra-core omegaconf netCDF4 pandas
+
+      - name: Compute metrics
+        run: |
+          source scripts/.env
+          python src/classify.py --model bruss --ds_id param_sweep_mock --time_ratio 0.1 --directory_var WORKDIR
