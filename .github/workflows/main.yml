@@ -49,7 +49,7 @@ jobs:
       - name: Run simulation
         run: |
           source scripts/.env
-          python scripts/run_from_inputs_local.sh
+          python scripts/run_from_inputs_local.sh default_bruss
 
   compute_metrics:
     needs: run_simulation
