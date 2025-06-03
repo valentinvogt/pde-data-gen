@@ -110,10 +110,8 @@ def run_wrapper(
         log_dict["original_point"] = original_point.model_dump()
 
     dataset_file = ds_info.file
-    print("dataset file = ", dataset_file)
     with DatasetManager(dataset_file, "a") as dataset:
         run_index = dataset.get_run_count()
-        print(run_index)
         dataset.add_run_metadata(run_index, log_dict)
         log_dict["dataset_file"] = dataset_file
         log_dict["run_index"] = run_index
