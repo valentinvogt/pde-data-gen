@@ -3,7 +3,7 @@ name: PDE Data Generation Pipeline
 on:
   push:
     branches:
-      - main
+      - master
 
 jobs:
   create_dataset:
