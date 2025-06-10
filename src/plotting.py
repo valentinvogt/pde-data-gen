@@ -3,8 +3,7 @@
 ###################################################
 import numpy as np
 import os
-from src.db_tools import Dataset
-from src.analysis.classify import compute_metrics, get_metrics_array
+from src.db_tools import Dataset, compute_metrics, get_metrics_array
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 from mpl_toolkits.axes_grid1 import ImageGrid

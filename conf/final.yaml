@@ -1,0 +1,49 @@
+# Base configuration
+defaults:
+  - config
+  - _self_
+
+# Model configuration
+model: bruss  # bruss, gray_scott, fhn
+dataset_id: final
+dataset_type: ball  # ball, multi_ic or all_fixed
+center_definition: from_df  # from_grid or from_df
+df_path: "data/final.csv"  # Path to dataframe file with parameter points
+workdir_env_var: SCRATCHDIR # An environment variable of this name should exist
+
+# Grid configuration (used when center_definition is from_grid)
+# grid_mode: absolute  # absolute or relative
+# grid_params:
+#   # For absolute mode
+#   A: [2.0, 3.0]
+#   B: [4.5, 5.5]
+#   Du: [1.0, 2.0]
+#   Dv: [8.0, 10.0]
+#   # For relative mode
+#   B_over_A: [2.0, 3.0]
+#   Dv_over_Du: [8.0, 10.0]
+
+sim_params:
+  Nx: 128
+  dx: 1.0
+  Nt: 40_000
+  dt: 0.0025
+  n_snapshots: 100
+
+# Initial conditions (list of configurations)
+initial_conditions:
+  - type: normal
+    sigma_u: 0.1
+    sigma_v: 0.1
+  - type: normal
+    sigma_u: 0.2
+    sigma_v: 0.2
+
+# Sampling parameters (for run_type: ball)
+sampling_std:
+  A: 0.1
+  B: 0.1
+  Du: 0.3
+  Dv: 0.3
+num_samples_per_ball: 100
+num_samples_per_ic: 1

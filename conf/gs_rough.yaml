@@ -4,11 +4,11 @@ defaults:
   - _self_
 
 model: gray_scott
-dataset_id: gs_pt
+dataset_id: gs_rough
 dataset_type: multi_ic
 center_definition: from_df
-df_path: "data/gs_pt.csv"
-workdir_env_var: WORKDIR # An environment variable of this name should exist
+df_path: "data/gs_rough.csv"
+workdir_env_var: SCRATCHDIR # An environment variable of this name should exist
 
 # grid_mode: absolute
 # grid_params:
@@ -20,7 +20,7 @@ workdir_env_var: WORKDIR # An environment variable of this name should exist
 sim_params:
   Nx: 128
   dx: 1.0
-  Nt: 100_000
+  Nt: 60_000
   dt: 0.01
   n_snapshots: 100
 
@@ -28,7 +28,6 @@ initial_conditions:
   - type: point_sources
     density: 0.05
   - type: point_sources
-    density: 0.10
-  - type: point_sources
     density: 0.15
+  
     

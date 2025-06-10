@@ -1,13 +1,13 @@
 #!/bin/bash
-#SBATCH --job-name=input-runner
-#SBATCH --output=input-runner-%j.out
-#SBATCH --error=input-runner-%j.err
+#SBATCH --job-name=input-runner-gs
+#SBATCH --output=input-runner-gs-%j.out
+#SBATCH --error=input-runner-gs-%j.err
 #SBATCH --ntasks=1
 #SBATCH --nodes=1
 #SBATCH --cpus-per-task=2
-#SBATCH --gpus-per-node=2
+#SBATCH --gpus-per-node=1
 #SBATCH --mem-per-cpu=8192
-#SBATCH --time=10:00:00
+#SBATCH --time=12:00:00
 #SBATCH --mail-type=END
 
 module load stack/2024-06
@@ -22,8 +22,8 @@ module load python/3.11.6
 source .env
 
 # ADAPT THESE
-model="bruss"
-dataset_id="default_bruss"
+model="gray_scott"
+dataset_id="gs_rough"
 
 DATAPATH="$SCRATCHDIR/data/$model/$dataset_id"
 echo $DATAPATH
