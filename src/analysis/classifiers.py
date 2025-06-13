@@ -12,7 +12,6 @@ def classify_frames_pca(frames, n_components=10, n_clusters=3):
     X_fft = fft_images.reshape(len(frames), -1)
     X_std = StandardScaler().fit_transform(X_fft)
     X_pca = PCA(n_components=n_components).fit_transform(X_std)
-
     return KMeans(n_clusters=n_clusters).fit_predict(X_pca)
 
 def classify_pattern(frames, threshold_lc=0.02, threshold_const=0.05):

@@ -8,7 +8,7 @@ dataset_id: gs_pt
 dataset_type: multi_ic
 center_definition: from_df
 df_path: data/gs_pt.csv
-workdir_env_var: WORKDIR # An environment variable of this name should exist
+workdir_env_var: SCRATCHDIR # An environment variable of this name should exist
 
 grid_mode: relative
 grid_params:

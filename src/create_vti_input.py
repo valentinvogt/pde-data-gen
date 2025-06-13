@@ -112,8 +112,8 @@ def create_vti_input(
         if initial_b is None:
             initial_b = np.zeros(domain_dimensions)
 
-    grid["a"] = np.astype(initial_a.flatten(), np.float32)
-    grid["b"] = np.astype(initial_b.flatten(), np.float32)
+    grid["a"] = initial_a.flatten().astype(np.float32)
+    grid["b"] = initial_b.flatten().astype(np.float32)
         # --- 3. Generate base VTK XML from PyVista using a temporary file ---
     with tempfile.NamedTemporaryFile(suffix=".vti", delete=True) as tmp_file:
         # Save the pyvista grid to the temporary file
