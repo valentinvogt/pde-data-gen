@@ -50,6 +50,18 @@ def ic_from_dict(d: Dict, ic_type: str = None) -> InitialCondition:
         raise ValueError(f"Unknown initial condition type: {ic_type}")
 
 
+def vti_initial_sparse_sources(
+    dims, sparsity, ic_seed=None
+):
+    rng = np.random.default_rng(ic_seed)
+    u = np.ones(shape=dims)
+    v = np.zeros(shape=dims)
+    for i in range(0, int(np.floor(sparsity * dims[0] * dims[1]))):
+        i = rng.integers(0, dims[0])
+        j = rng.integers(0, dims[1])
+        v[i, j] = 1.0
+    return u, v
+
 def initial_sparse_sources(member, coupled_idx, x_position, y_position, sparsity):
     if coupled_idx == 0:
         u = np.ones(x_position.shape)
@@ -63,6 +75,46 @@ def initial_sparse_sources(member, coupled_idx, x_position, y_position, sparsity
         print("initial_noisy_function is only meant for n_coupled == 2!")
         u = 0.0 * x_position
     return u
+
+
+def vti_steady_state_plus_noise(
+    dims, params, ic_params, ic_seed=None
+):
+    rng = np.random.default_rng(ic_seed)
+    A = params[0]
+    B = params[1]
+    u = A * np.ones(shape=dims)
+    v = B * np.ones(shape=dims)
+    if isinstance(ic_params, NormalIC):
+        u += rng.normal(0.0, ic_params.sigma_u, size=dims)
+        v += rng.normal(0.0, ic_params.sigma_v, size=dims)
+    elif isinstance(ic_params, UniformIC):
+        u += rng.uniform(ic_params.u_min, ic_params.u_max, size=dims)
+        v += rng.uniform(ic_params.v_min, ic_params.v_max, size=dims)
+    elif isinstance(ic_params, HexPatternIC):
+        u += (
+            rng.normal(1.0, 0.5)
+            * ic_params.amplitude
+            * (
+                np.cos(2 * np.pi * np.arange(dims[0])[:, None] / ic_params.wavelength)
+                + np.sin(2 * np.pi * np.arange(dims[1])[None, :] / ic_params.wavelength)
+                + np.cos(2 * np.pi * (np.arange(dims[0])[:, None] + np.arange(dims[1])[None, :]) / ic_params.wavelength)
+            )
+        )
+        v += (
+            rng.normal(1.0, 0.5)
+            * ic_params.amplitude
+            * (
+                np.cos(2 * np.pi * np.arange(dims[0])[:, None] / ic_params.wavelength)
+                + np.sin(2 * np.pi * np.arange(dims[1])[None, :] / ic_params.wavelength)
+                + np.cos(2 * np.pi * (np.arange(dims[0])[:, None] + np.arange(dims[1])[None, :]) / ic_params.wavelength)
+            )
+        )
+    else:
+        print("unknown initial condition type, returning steady state without noise")
+        u = A * np.ones(shape=dims)
+        v = B * np.ones(shape=dims)
+    return u, v
 
 
 def steady_state_plus_noise(
@@ -112,6 +164,18 @@ def get_ic_function(
     if isinstance(ic_params, PointSourcesIC):
         return partial(initial_sparse_sources, sparsity=ic_params.density)
     return partial(steady_state_plus_noise, params=(A, B), ic_params=ic_params, ic_seed=seed)
+
+
+def get_ic_data_vti(
+    A, B, ic_params: InitialCondition, dims, seed: float = None
+):
+    if isinstance(ic_params, PointSourcesIC):
+        return vti_initial_sparse_sources(dims, ic_params.density, ic_seed=seed)
+    else:
+        return vti_steady_state_plus_noise(
+            dims, params=(A, B), ic_params=ic_params, ic_seed=seed
+        )
+    
 
 def get_ic_type(ic_params: InitialCondition) -> Literal["normal", "point_sources", "uniform", "hex_pattern"]:
     if isinstance(ic_params, NormalIC):

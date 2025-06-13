@@ -18,4 +18,4 @@ module load python/3.11.6
 HDF5_USE_FILE_LOCKING=FALSE
 set -a && source .env
 
-python3 scripts/create_inputs.py --config-name=gs_rough
+uv run scripts/create_inputs.py --config-name=config

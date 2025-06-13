@@ -11,6 +11,7 @@ import pandas as pd
 from typing import List, Dict
 from itertools import product
 from src.create_netcdf_input import create_input_file
+from src.create_vti_input import create_vti_input
 from src.setup_helpers import (
     f_scalings,
     zero_func,
@@ -25,7 +26,8 @@ from src.initial_conditions import (
     InitialCondition,
     ic_from_dict,
     NormalIC,
-    get_ic_type
+    get_ic_type,
+    get_ic_data_vti
 )
 
 from src.dataset_manager import DatasetManager, create_metadata_file
@@ -55,75 +57,90 @@ def run_wrapper(
     fn_order = 4 if model == "fhn" else 3
     fn_scalings = f_scalings(model, A, B)
 
-    input_file = run_id + ".nc"
+    input_file = run_id + ".vti"
     input_filename = os.path.join(ds_info.output_dir, input_file)
-    output_filename = input_filename.replace(".nc", "_output.nc")
+    # output_filename = input_filename.replace(".nc", "_output.nc")
 
     if random_seed is None:
         random_seed = randint(0, 2**31 - 1)
     ic_function = get_ic_function(model, A, B, initial_condition, random_seed)
 
-    create_input_file(
+    u0, v0 = get_ic_data_vti(A, B, initial_condition, (Nx, Nx, 1), random_seed)
+    create_vti_input(
         input_filename,
-        output_filename,
-        type_of_equation=2,
-        x_size=Nx,
-        x_length=Nx * dx,
-        y_size=Nx,
-        y_length=Nx * dx,
-        boundary_value_type=2,
-        scalar_type=0,
-        n_coupled=2,
-        coupled_function_order=fn_order,
-        number_timesteps=Nt,
-        final_time=Nt * dt,
-        number_snapshots=n_snapshots,
-        n_members=1,
-        initial_value_function=ic_function,
-        sigma_function=const_sigma,
-        bc_neumann_function=zero_func,
-        f_value_function=fn_scalings,
-        Du=Du,
-        Dv=Dv,
+        model,
+        Du,
+        Dv,
+        A,
+        B,
+        (Nx, Nx, 1),
+        dt,
+        "image_data",
+        initial_a=u0,
+        initial_b=v0,
     )
+    
+    # create_input_file(
+    #     input_filename,
+    #     output_filename,
+    #     type_of_equation=2,
+    #     x_size=Nx,
+    #     x_length=Nx * dx,
+    #     y_size=Nx,
+    #     y_length=Nx * dx,
+    #     boundary_value_type=2,
+    #     scalar_type=0,
+    #     n_coupled=2,
+    #     coupled_function_order=fn_order,
+    #     number_timesteps=Nt,
+    #     final_time=Nt * dt,
+    #     number_snapshots=n_snapshots,
+    #     n_members=1,
+    #     initial_value_function=ic_function,
+    #     sigma_function=const_sigma,
+    #     bc_neumann_function=zero_func,
+    #     f_value_function=fn_scalings,
+    #     Du=Du,
+    #     Dv=Dv,
+    # )
 
-    log_dict = {
-        "model": model,
-        "A": A,
-        "B": B,
-        "Nx": Nx,
-        "dx": dx,
-        "Nt": Nt,
-        "dt": dt,
-        "Du": Du,
-        "Dv": Dv,
-        "ic_type": get_ic_type(initial_condition),
-        "initial_condition": ic_data,
-        "random_seed": random_seed,
-        "n_snapshots": n_snapshots,
-        "filename": output_filename,
-        "dataset_id": ds_id,
-        "run_id": run_id,
-    }
+    # log_dict = {
+    #     "model": model,
+    #     "A": A,
+    #     "B": B,
+    #     "Nx": Nx,
+    #     "dx": dx,
+    #     "Nt": Nt,
+    #     "dt": dt,
+    #     "Du": Du,
+    #     "Dv": Dv,
+    #     "ic_type": get_ic_type(initial_condition),
+    #     "initial_condition": ic_data,
+    #     "random_seed": random_seed,
+    #     "n_snapshots": n_snapshots,
+    #     "filename": output_filename,
+    #     "dataset_id": ds_id,
+    #     "run_id": run_id,
+    # }
 
-    if original_point is not None:
-        log_dict["original_point"] = original_point.model_dump()
+    # if original_point is not None:
+    #     log_dict["original_point"] = original_point.model_dump()
 
-    dataset_file = ds_info.file
-    with DatasetManager(dataset_file, "a") as dataset:
-        run_index = dataset.get_run_count()
-        dataset.add_run_metadata(run_index, log_dict)
-        log_dict["dataset_file"] = dataset_file
-        log_dict["run_index"] = run_index
+    # dataset_file = ds_info.file
+    # with DatasetManager(dataset_file, "a") as dataset:
+    #     run_index = dataset.get_run_count()
+    #     dataset.add_run_metadata(run_index, log_dict)
+    #     log_dict["dataset_file"] = dataset_file
+    #     log_dict["run_index"] = run_index
 
-    # backward compatibility
-    create_json(
-        log_dict,
-        input_filename.replace(".nc", ".json"),
-    )
+    # # backward compatibility
+    # create_json(
+    #     log_dict,
+    #     input_filename.replace(".nc", ".json"),
+    # )
 
-    if print_filenames:
-        print(input_filename)
+    # if print_filenames:
+    #     print(input_filename)
 
 
 def sample_ball(
