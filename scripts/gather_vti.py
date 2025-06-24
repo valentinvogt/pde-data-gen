@@ -20,23 +20,23 @@ def gather_vti_files(path: Path, output: Path = Path("gathered_data.nc")):
     # Extract RD parameters
     rd_element = root.find(".//RD")
     if rd_element is not None:
-        rule_element = rd_element.find(".//rule[@name='Gray-Scott']")
+        rule_element = rd_element.find(".//rule")
         if rule_element is not None:
             timestep_element = rule_element.find(".//param[@name='timestep']")
             D_a_element = rule_element.find(".//param[@name='D_a']")
             D_b_element = rule_element.find(".//param[@name='D_b']")
             alpha_element = rule_element.find(".//param[@name='alpha']")
             beta_element = rule_element.find(".//param[@name='beta']")
-
+            dx_element = rule_element.find(".//param[@name='dx']")
             timestep = float(timestep_element.text) if timestep_element is not None else None
             D_a = float(D_a_element.text) if D_a_element is not None else None
             D_b = float(D_b_element.text) if D_b_element is not None else None
             alpha = float(alpha_element.text) if alpha_element is not None else None
             beta = float(beta_element.text) if beta_element is not None else None
-
+            dx = float(dx_element.text) if dx_element is not None else None
             print(f"Timestep: {timestep}, D_a: {D_a}, D_b: {D_b}, Alpha: {alpha}, Beta: {beta}")
         else:
-            print("Rule element with name 'Gray-Scott' not found.")
+            print("Rule element not found.")
     else:
         print("RD element not found.")
 
@@ -52,12 +52,32 @@ def gather_vti_files(path: Path, output: Path = Path("gathered_data.nc")):
     a_array = np.stack(a_arrays) # (n_snapshots, n_y, n_x)
     b_array = np.stack(b_arrays) # (n_snapshots, n_y, n_x)
     res = np.stack([a_array, b_array], axis=1)  # (n_snapshots, 2, n_y, n_x)
-    res = xr.DataArray(res, dims=["snapshot", "variable", "y", "x"], coords={
-        "snapshot": np.arange(len(files)),
-        "variable": ["a", "b"],
-        "y": np.arange(dims[1]),
-        "x": np.arange(dims[0])
-    })
+    res = np.transpose(res, (0, 1, 3, 2))  # (n_snapshots, 2, n_x, n_y)
+    res = res[np.newaxis, ...]  
+    res = xr.Dataset(
+        data_vars={
+            "data": (["trajectory", "snapshot", "component", "x", "y"], 
+                        res),
+            "Du": (["trajectory"], [D_a]),
+            "Dv": (["trajectory"], [D_b]),
+            "A": (["trajectory"], [alpha]),
+            "B": (["trajectory"], [beta])
+        },
+        coords={
+            "trajectory": [0],
+            "snapshot": np.arange(len(files)),
+            "component": ["u", "v"],
+            "x": np.arange(dims[0]),
+            "y": np.arange(dims[1])
+        },
+        attrs={
+            "timestep": timestep,
+            "n_snapshots": len(files),
+            "n_x": dims[0],
+            "n_y": dims[1],
+            "dx": dx,
+        }
+    )
     res.to_netcdf(output, mode="w", format="NETCDF4")
     print(f"Gathered {len(files)} VTI files into {output}")
 

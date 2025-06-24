@@ -78,6 +78,7 @@ def run_wrapper(
         "image_data",
         initial_a=u0,
         initial_b=v0,
+        dx=dx,
     )
     
     # create_input_file(
