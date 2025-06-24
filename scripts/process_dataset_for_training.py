@@ -133,8 +133,8 @@ def create_parameter_component(ds_new):
 
 
 def downsample_in_time(ds, num_snapshots):
-    snapshot_indices = np.linspace(
-        0, ds.sizes["snapshot"] - 1, num_snapshots, dtype=int
+    snapshot_indices = np.arange(
+        5, 5 + 2 * num_snapshots, 2, dtype=int
     )
     return ds.isel(snapshot=snapshot_indices)
 
@@ -172,14 +172,6 @@ if __name__ == "__main__":
         os.remove(outfile_nc)
 
     ds = xr.open_dataset(args.filename)
-    ds = ds.chunk(
-        {
-            "run": 100,
-            "snapshot": 10,
-            "x_size_and_boundary": 10,
-            "n_coupled_and_y_size_and_boundary": 10,
-        }
-    )
     # Extract dimensions
     n_runs = ds.sizes["run"]
     n_snapshots = ds.sizes["snapshot"]
@@ -241,7 +233,7 @@ if __name__ == "__main__":
 
         
     ds_final.rename({"run": "trajectory"})
-    ds_final = ds_final.chunk({"Nx": 10, "Ny": 10})
+    ds_final = ds_final.chunk({"run": 128, "Nx": 32, "Ny": 32})
     # At this point, no computation has been done yet
     # To actually compute and save the result:
     print("Writing to file")

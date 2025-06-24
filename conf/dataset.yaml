@@ -4,35 +4,35 @@ defaults:
   - _self_
 
 # Sample dataset configuration for multiple models and parameter spaces
-dataset_id: ball_from_df
-dataset_type: ball
+dataset_id: int
+dataset_type: multi_ic
 center_definition: from_df
-df_path: data/varied_points.csv
-workdir_env_var: WORKDIR # An environment variable of this name should exist
+df_path: data/int.csv
+workdir_env_var: SCRATCHDIR # An environment variable of this name should exist
 
 sim_params:
-  Nx: 256
+  Nx: 128
   dx: 0.5
-  Nt: 200000
-  dt: 0.005
-  n_snapshots: 200
+  Nt: 60_000
+  dt: 0.0025
+  n_snapshots: 100
 
 # Multiple initial conditions to test different patterns
 initial_conditions:
   - type: normal
     sigma_u: 0.1
     sigma_v: 0.1
-  - type: point_sources
-    density: 0.05
-  - type: hex_pattern
-    amplitude: 0.1
-    wavelength: 10
+  # - type: point_sources
+  #   density: 0.05
+  # - type: hex_pattern
+  #   amplitude: 0.1
+  #   wavelength: 10
 
 # Sampling parameters
-sampling_std:
-  A: 0.05
-  B: 0.05
-  Du: 0.05
-  Dv: 0.05
-num_samples_per_ball: 5
-num_samples_per_ic: 2
+# sampling_std:
+#   A: 0.05
+#   B: 0.05
+#   Du: 0.05
+#   Dv: 0.05
+# num_samples_per_ball: 5
+# num_samples_per_ic: 2

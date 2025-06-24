@@ -3,9 +3,13 @@ from numpy.linalg import norm
 from scipy.fft import fft
 from .features import compute_glcm_features, compute_directional_power
 
-def compute_metrics(data, u_ss, v_ss, starting_idx):
-    u = data[:, :, 0::2]
-    v = data[:, :, 1::2]
+def compute_metrics(data, u_ss, v_ss, starting_idx, mode="old"):
+    if mode == "old":
+        u = data[:, :, 0::2]
+        v = data[:, :, 1::2]
+    else:
+        u = data[:, 0, :, :]
+        v = data[:, 1, :, :]
 
     max_u = np.max(u)
     max_v = np.max(v)
@@ -26,6 +30,8 @@ def compute_metrics(data, u_ss, v_ss, starting_idx):
     last_dt = dt_norm[-starting_idx:]
 
     u_avg = np.mean(u, axis=(1, 2))
+    if not isinstance(u_avg, np.ndarray):
+        u_avg = u_avg.values
     fft_u = np.abs(fft(u_avg - u_ss)) / len(u_avg)
     fft_u[0] = 0
 

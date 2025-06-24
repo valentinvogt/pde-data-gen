@@ -5,10 +5,10 @@ defaults:
 
 # Model configuration
 model: bruss  # bruss, gray_scott, fhn
-dataset_id: final
+dataset_id: final_2
 dataset_type: ball  # ball, multi_ic or all_fixed
 center_definition: from_df  # from_grid or from_df
-df_path: "data/final.csv"  # Path to dataframe file with parameter points
+df_path: "data/small_a.csv"  # Path to dataframe file with parameter points
 workdir_env_var: SCRATCHDIR # An environment variable of this name should exist
 
 # Grid configuration (used when center_definition is from_grid)
@@ -45,5 +45,5 @@ sampling_std:
   B: 0.1
   Du: 0.3
   Dv: 0.3
-num_samples_per_ball: 100
+num_samples_per_ball: 5
 num_samples_per_ic: 1
