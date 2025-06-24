@@ -15,8 +15,8 @@ MODELS = {
     "bruss": {
         "rule_name": "Brusselator",
         "formula": (
-            "delta_a = D_a * laplacian_a + alpha - (beta + 1) * a + a * b * b;\n"
-            "delta_b = D_b * laplacian_b + beta * a - a * b * b;"
+            "delta_a = D_a * laplacian_a + alpha - (beta + 1) * a + a * a * b;\n"
+            "delta_b = D_b * laplacian_b + beta * a - a * a * b;"
         ),
     },
 }
@@ -69,6 +69,7 @@ def create_vti_input(
     initialization_mode: str = "generator",
     initial_a: np.ndarray = None,
     initial_b: np.ndarray = None,
+    dx: float = 1.0,  # Default voxel size
 ):
     """
     Generates a VTI input file for a reaction-diffusion simulator.
@@ -143,7 +144,8 @@ def create_vti_input(
     ET.SubElement(rule, "param", name="D_b").text = f"{Dv:.6f}"
     ET.SubElement(rule, "param", name="alpha").text = f"{alpha:.6f}"
     ET.SubElement(rule, "param", name="beta").text = f"{beta:.6f}"
-
+    #       <param name="dx">0.500000</param>
+    ET.SubElement(rule, "param", name="dx").text = f"{dx:.6f}"
     ET.SubElement(
         rule,
         "formula",

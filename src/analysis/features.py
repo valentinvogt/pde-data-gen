@@ -3,6 +3,8 @@ from scipy.fft import fft, fft2, fftshift
 from skimage.feature import graycomatrix, graycoprops
 
 def fft_features_log(img):
+    if not isinstance(img, np.ndarray):
+        img = img.values
     f = fft2(img)
     fshift = fftshift(f)
     mag = np.abs(fshift)
@@ -25,6 +27,8 @@ def compute_glcm_features(final_u):
     return np.mean(graycoprops(glcm, "energy"))
 
 def compute_directional_power(final_u):
+    if not isinstance(final_u, np.ndarray):
+        final_u = final_u.values
     f_transform = fftshift(np.abs(fft2(final_u)))
     power_spectrum = f_transform**2
 

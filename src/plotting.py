@@ -11,11 +11,17 @@ import plotly.graph_objects as go
 from functools import partial
 
 
-def plot(data, global_min, global_max):
+def plot(data, global_min, global_max, mode="old"):
     fig, axes = plt.subplots(1, 2, figsize=(12, 6), gridspec_kw={"wspace": 0.4})
     ims = []
     for coupled_idx, ax in enumerate(axes):
-        matrix = data[-1, :, coupled_idx::2]
+        if mode == "old":
+            matrix = data[-1, :, coupled_idx::2]
+        else:
+            if len(data.shape) == 4:
+                matrix = data[-1, coupled_idx, :, :]
+            else:
+                matrix = data[-1, :, :]
         matrix /= np.max(matrix)
         im = ax.imshow(matrix, cmap="viridis", aspect="equal", vmin=0, vmax=1)
         ax.set_title(f"Snapshot -1, {'u' if coupled_idx == 0 else 'v'}")
@@ -23,9 +29,15 @@ def plot(data, global_min, global_max):
     return fig, axes, ims
 
 
-def animate(snapshot, data, ims, axes):
+def animate(snapshot, data, ims, axes, mode="old"):
     for coupled_idx, (ax, im) in enumerate(zip(axes, ims)):
-        matrix = data[snapshot, :, coupled_idx::2]
+        if mode == "old":
+            matrix = data[snapshot, :, coupled_idx::2]
+        else:
+            if len(data.shape) == 4:
+                matrix = data[snapshot, coupled_idx, :, :]
+            else:
+                matrix = data[snapshot, :, :]
         matrix /= matrix.max()  # Normalize
         im.set_array(matrix)
         name = "u" if coupled_idx == 0 else "v"
@@ -33,16 +45,16 @@ def animate(snapshot, data, ims, axes):
     return ims
 
 
-def make_animation(data, filename_no_ext, out_dir):
+def make_animation(data, filename_no_ext, out_dir, mode="old"):
     """
     Creates .gif animation of the data in the specified directory.
     """
     global_min = np.min(data)
     global_max = np.max(data)
-    fig, axes, ims = plot(data, global_min, global_max)
+    fig, axes, ims = plot(data, global_min, global_max, mode)
     ani = animation.FuncAnimation(
         fig,
-        partial(animate, data=data, ims=ims, axes=axes),
+        partial(animate, data=data, ims=ims, axes=axes, mode=mode),
         frames=data.shape[0],
         interval=100,
         blit=True,
