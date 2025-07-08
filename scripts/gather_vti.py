@@ -5,7 +5,7 @@ from pathlib import Path
 import xml.etree.ElementTree as ET
 
 
-def gather_vti_files(path: Path, output: Path = Path("gathered_data.nc")):
+def gather_vti_files(path: Path, output: Path = Path("gathered_data.nc"), input_filename = None):
     files = sorted(path.glob("*.vti"), key=lambda f: int(f.stem.split(".")[0]))
 
     if not files:
@@ -52,23 +52,29 @@ def gather_vti_files(path: Path, output: Path = Path("gathered_data.nc")):
     a_array = np.stack(a_arrays) # (n_snapshots, n_y, n_x)
     b_array = np.stack(b_arrays) # (n_snapshots, n_y, n_x)
     res = np.stack([a_array, b_array], axis=1)  # (n_snapshots, 2, n_y, n_x)
+    if np.any(np.isnan(res)):
+        raise ValueError("Contains NaN!. Skipping")
+        
     res = np.transpose(res, (0, 1, 3, 2))  # (n_snapshots, 2, n_x, n_y)
     res = res[np.newaxis, ...]  
     res = xr.Dataset(
         data_vars={
-            "data": (["trajectory", "snapshot", "component", "x", "y"], 
-                        res),
+            "data": (["trajectory", "snapshot", "component", "x", "y"], res),
             "Du": (["trajectory"], [D_a]),
             "Dv": (["trajectory"], [D_b]),
             "A": (["trajectory"], [alpha]),
-            "B": (["trajectory"], [beta])
+            "B": (["trajectory"], [beta]),
+            "input_filename": (
+                ["trajectory"],
+                [input_filename if input_filename else ""],
+            ),
         },
         coords={
             "trajectory": [0],
             "snapshot": np.arange(len(files)),
             "component": ["u", "v"],
             "x": np.arange(dims[0]),
-            "y": np.arange(dims[1])
+            "y": np.arange(dims[1]),
         },
         attrs={
             "timestep": timestep,
@@ -76,7 +82,7 @@ def gather_vti_files(path: Path, output: Path = Path("gathered_data.nc")):
             "n_x": dims[0],
             "n_y": dims[1],
             "dx": dx,
-        }
+        },
     )
     res.to_netcdf(output, mode="w", format="NETCDF4")
     print(f"Gathered {len(files)} VTI files into {output}")
@@ -86,8 +92,9 @@ if __name__ == "__main__":
     import argparse
 
     parser = argparse.ArgumentParser(description="Gather VTI files into a single dataset.")
-    parser.add_argument("--path", "-p", type=Path, help="Path to the directory containing VTI files")
+    parser.add_argument("path", type=Path, help="Path to the directory containing VTI files")
+    parser.add_argument("--input-filename", type=str, help="Name of the input VTI file")
     parser.add_argument("--output", "-o", type=Path, help="Path to the output netCDF file", default=Path("gathered_data.nc"))
     args = parser.parse_args()
 
-    gather_vti_files(args.path, args.output)
+    gather_vti_files(args.path, args.output, args.input_filename)

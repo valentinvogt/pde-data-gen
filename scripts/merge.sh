@@ -9,7 +9,7 @@ ncrcat_options="-O"
 # Temporary files array
 mod_files=()
 
-DIR="/cluster/scratch/vogtva/data/bruss/final_2"
+DIR=$1
 output_file="$DIR/_dataset.nc"
 
 rm "$output_file"
@@ -31,7 +31,7 @@ echo "Done appending dims"
 # Step 2: Concatenate the modified files along the 'trajectory' dimension
 output_file="$DIR/_dataset.nc"
 ncrcat ${ncrcat_options} "${mod_files[@]}" "${output_file}"
-ncatted -a history,global,d,, ${output_file} ${output_file}
+ncatted -a history,global,d,, ${output_file} ${output_file} -O
 # Optional: Clean up temporary files
 rm "${mod_files[@]}"
 
