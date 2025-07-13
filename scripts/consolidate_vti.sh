@@ -6,13 +6,13 @@
 #SBATCH --nodes=1
 #SBATCH --cpus-per-task=4
 #SBATCH --mem-per-cpu=8192
-#SBATCH --time=12:00:00
+#SBATCH --time=0:10:00
 
 module load stack/2024-06 python/3.11.6
 
 source .env
 model="gray_scott"
-dataset_id="gs_single"
+dataset_id="gs_final"
 DATAPATH="$SCRATCHDIR/data/$model/$dataset_id"
 
 for dir in $DATAPATH/out-*; do
@@ -32,9 +32,9 @@ for dir in $DATAPATH/out-*; do
     end=$(date +%s.%N)
     duration=$(echo "$end - $start" | bc)
     echo "$dir_name took $duration seconds"
-    # rm $dir/*.vti
+    rm $dir/*.vti
 done
 
-./scripts/merge.sh $DATAPATH
+# ./scripts/merge.sh $DATAPATH
 
-python3 src/classify.py --model $model --ds_id $dataset_id --time_ratio 0.2 --directory_var SCRATCHDIR --mode new
+# python3 src/classify.py --model $model --ds_id $dataset_id --time_ratio 0.2 --directory_var SCRATCHDIR --mode new

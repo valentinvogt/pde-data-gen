@@ -7,7 +7,7 @@
 #SBATCH --cpus-per-task=2
 #SBATCH --gpus-per-node=1
 #SBATCH --mem-per-cpu=8192
-#SBATCH --time=12:00:00
+#SBATCH --time=3:00:00
 #SBATCH --mail-type=END
 
 module load stack/2024-06
@@ -23,7 +23,7 @@ source .env
 
 # ADAPT THESE
 model="gray_scott"
-dataset_id="gs_rough"
+dataset_id="gs_int"
 
 DATAPATH="$SCRATCHDIR/data/$model/$dataset_id"
 echo $DATAPATH

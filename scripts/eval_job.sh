@@ -2,7 +2,7 @@
 #SBATCH --job-name=eval
 #SBATCH --output=eval-%j.out
 #SBATCH --error=eval-%j.err
-#SBATCH --cpus-per-task=4
+#SBATCH --cpus-per-task=6
 #SBATCH --mem-per-cpu=16384
 #SBATCH --time=04:00:00
 # #SBATCH --mail-type=END
@@ -16,12 +16,13 @@ module load python/3.11.6
 source .env
 HDF5_USE_FILE_LOCKING=FALSE
 
-MODEL=bruss
-DATASET=final_2
+MODEL=gray_scott
+DATASET=gs_int
 
+# python3 scripts/rechunk.py
 #--- Consolidate
 # python3 scripts/consolidate_old_format.py $SCRATCHDIR/data/$MODEL/$DATASET
-
+# python3 analysis/ms.py
 #--- Classify 
 python3 src/classify.py --model $MODEL --ds_id $DATASET --time_ratio 0.2 --directory_var SCRATCHDIR --mode new
 

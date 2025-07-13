@@ -1,13 +1,13 @@
 import xarray as xr
 ds = xr.open_dataset(
-    "/cluster/scratch/vogtva/data/bruss/final/_dataset_processed_new.nc"
+    "/cluster/scratch/vogtva/data/gray_scott/gs_new/_dataset_processed.nc"
 )
 ds = ds.chunk(
     {
-        "run": 100,
+        "trajectory": 100,
         # "snapshot": 10,
-        "Nx": 32,
-        "Ny": 32,
+        "x": 32,
+        "y": 32,
     }
 )
-ds.to_netcdf("/cluster/scratch/vogtva/data/bruss/final/_dataset_processed_rch.nc")
+ds.to_netcdf("/cluster/scratch/vogtva/data/gray_scott/gs_new/_dataset_processed_rch.nc")

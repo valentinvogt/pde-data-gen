@@ -219,7 +219,7 @@ def get_metrics_array(dataset: Dataset, start_frame=0, metric="dev", mode="old")
     df, get_data = dataset.df, dataset.get_data
     all_metrics = []
     for _, row in df.iterrows():
-        metrics = compute_metrics(row, get_data(row), start_frame=start_frame, mode)
+        metrics = compute_metrics(row, get_data(row), start_frame=start_frame, mode=mode)
         if metric == "dev":
             title = "Deviation"
             values = metrics[0]

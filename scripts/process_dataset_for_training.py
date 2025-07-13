@@ -133,8 +133,8 @@ def create_parameter_component(ds_new):
 
 
 def downsample_in_time(ds, num_snapshots):
-    snapshot_indices = np.arange(
-        5, 5 + 2 * num_snapshots, 2, dtype=int
+    snapshot_indices = np.linspace(
+        5, 5 + 9 * num_snapshots, 10, dtype=int
     )
     return ds.isel(snapshot=snapshot_indices)
 
@@ -173,7 +173,7 @@ if __name__ == "__main__":
 
     ds = xr.open_dataset(args.filename)
     # Extract dimensions
-    n_runs = ds.sizes["run"]
+    # n_runs = ds.sizes["run"]
     n_snapshots = ds.sizes["snapshot"]
 
     assert (
@@ -182,23 +182,23 @@ if __name__ == "__main__":
     # Assuming n_coupled_and_y_size_and_boundary is twice the y_size because
     # it contains the coupled variables u and v interleaved
 
-    print("Reshaping")
-    reshaped_data = reshape_data(ds)
-
+    # print("Reshaping")
+    # reshaped_data = reshape_data(ds)
+    reshaped_data = ds.to_dataarray()
     if n_snapshots_target > 0:
-        print("Downsampling")
+        print("Downsampling")   
         reshaped_data = downsample_in_time(reshaped_data, n_snapshots_target)
 
     ds_new = xr.Dataset(
         data_vars={
             "data": reshaped_data,
-            "run_id": ds["run_id"],
-            "model": ds["model"],
+            # "run_id": ds["run_id"],
+            # "model": ds["model"],
             "A": ds["A"],
             "B": ds["B"],
             "Du": ds["Du"],
             "Dv": ds["Dv"],
-            "initial_condition": ds["initial_condition"],
+            # "initial_condition": ds["initial_condition"],
         }
     )
 

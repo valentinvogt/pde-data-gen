@@ -4,23 +4,23 @@ defaults:
   - _self_
 
 model: gray_scott
-dataset_id: gs_single
+dataset_id: gs_final
 dataset_type: ball
-center_definition: from_grid
+center_definition: from_df
 workdir_env_var: SCRATCHDIR # An environment variable of this name should exist
-df_path: "data/gs_single.csv"
+df_path: "data/gs_int.csv"
 
-grid_mode: absolute
-grid_params:
-  A: [0.037]
-  B: [0.06]
-  Du: [0.2]
-  Dv: [0.1]
+# grid_mode: absolute
+# grid_params:
+#   A: [0.037]
+#   B: [0.06]
+#   Du: [0.2]
+#   Dv: [0.1]
 
 sim_params:
   Nx: 128
   dx: 1.0
-  Nt: 100000
+  Nt: 100_000
   dt: 0.01
   n_snapshots: 100
 
@@ -28,19 +28,15 @@ initial_conditions:
   - type: point_sources
     density: 0.01
   - type: point_sources
-    density: 0.025
+    density: 0.015
   - type: point_sources
-    density: 0.05
-  - type: point_sources
-    density: 0.075
-  - type: point_sources
-    density: 0.1
+    density: 0.02
 
 sampling_std:
-  A: 0.01
-  B: 0.01
-  Du: 0.00
-  Dv: 0.00
+  A: 0.025
+  B: 0.025
+  Du: 0.05
+  Dv: 0.05
 
-num_samples_per_ball: 50
+num_samples_per_ball: 200
 num_samples_per_ic: 1

@@ -11,20 +11,20 @@ import plotly.graph_objects as go
 from functools import partial
 
 
-def plot(data, global_min, global_max, mode="old"):
+def plot(data, global_min, global_max, frame=-1, mode="old"):
     fig, axes = plt.subplots(1, 2, figsize=(12, 6), gridspec_kw={"wspace": 0.4})
     ims = []
     for coupled_idx, ax in enumerate(axes):
         if mode == "old":
-            matrix = data[-1, :, coupled_idx::2]
+            matrix = data[frame, :, coupled_idx::2]
         else:
             if len(data.shape) == 4:
-                matrix = data[-1, coupled_idx, :, :]
+                matrix = data[frame, coupled_idx, :, :]
             else:
-                matrix = data[-1, :, :]
+                matrix = data[frame, :, :]
         matrix /= np.max(matrix)
         im = ax.imshow(matrix, cmap="viridis", aspect="equal", vmin=0, vmax=1)
-        ax.set_title(f"Snapshot -1, {'u' if coupled_idx == 0 else 'v'}")
+        ax.set_title(f"Snapshot {frame}, {'u' if coupled_idx == 0 else 'v'}")
         ims.append(im)
     return fig, axes, ims
 
@@ -51,7 +51,7 @@ def make_animation(data, filename_no_ext, out_dir, mode="old"):
     """
     global_min = np.min(data)
     global_max = np.max(data)
-    fig, axes, ims = plot(data, global_min, global_max, mode)
+    fig, axes, ims = plot(data, global_min, global_max, mode=mode)
     ani = animation.FuncAnimation(
         fig,
         partial(animate, data=data, ims=ims, axes=axes, mode=mode),

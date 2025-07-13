@@ -4,6 +4,9 @@ from scipy.fft import fft
 from .features import compute_glcm_features, compute_directional_power
 
 def compute_metrics(data, u_ss, v_ss, starting_idx, mode="old"):
+    if not isinstance(data, np.ndarray):
+        data = data.values
+    
     if mode == "old":
         u = data[:, :, 0::2]
         v = data[:, :, 1::2]
@@ -30,8 +33,8 @@ def compute_metrics(data, u_ss, v_ss, starting_idx, mode="old"):
     last_dt = dt_norm[-starting_idx:]
 
     u_avg = np.mean(u, axis=(1, 2))
-    if not isinstance(u_avg, np.ndarray):
-        u_avg = u_avg.values
+    # if not isinstance(u_avg, np.ndarray):
+    #     u_avg = u_avg.values
     fft_u = np.abs(fft(u_avg - u_ss)) / len(u_avg)
     fft_u[0] = 0
 
@@ -58,5 +61,6 @@ def compute_metrics(data, u_ss, v_ss, starting_idx, mode="old"):
         "rel_std_u": rel_std_u_mean,
         "rel_std_v": rel_std_v_mean,
         "dir_var": np.var(directional_power),
-        "glcm_energy": glcm_energy
+        "glcm_energy": glcm_energy,
+        "init_sum": np.sum(u[0, :, :]) + np.sum(v[0, :, :]),
     } 

@@ -153,7 +153,7 @@ def create_vti_input(
         block_size_x="4",
         block_size_y="1",
         block_size_z="1",
-        accuracy="medium",
+        accuracy="high",
     ).text = model["formula"]
 
     # Add generator or use data based on mode
