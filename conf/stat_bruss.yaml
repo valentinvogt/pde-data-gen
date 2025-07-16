@@ -1,0 +1,22 @@
+# Dataset generation configuration
+defaults:
+  - config
+  - _self_
+
+# Sample dataset configuration for multiple models and parameter spaces
+dataset_id: bruss_stat
+dataset_type: all_fixed
+center_definition: from_df
+workdir_env_var: SCRATCHDIR # An environment variable of this name should exist
+df_path: "data/bruss_stat.csv"
+
+sim_params:
+  Nx: 128
+  dx: 1.0
+  Nt: 60_000
+  dt: 0.0025
+  n_snapshots: 100
+
+
+# num_samples_per_ball: 3
+num_samples_per_ic: 100

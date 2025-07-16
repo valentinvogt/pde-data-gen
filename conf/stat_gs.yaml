@@ -4,26 +4,19 @@ defaults:
   - _self_
 
 # Sample dataset configuration for multiple models and parameter spaces
-dataset_id: stat_one
-dataset_type: multi_ic
+model: gray_scott
+dataset_id: gs_stat
+dataset_type: all_fixed
 center_definition: from_df
 workdir_env_var: SCRATCHDIR # An environment variable of this name should exist
-df_path: "data/one.csv"
+df_path: "data/gray_scott_stat.csv"
 
 sim_params:
   Nx: 128
   dx: 1.0
-  Nt: 60_000
-  dt: 0.0025
+  Nt: 100_000
+  dt: 0.01
   n_snapshots: 100
-
-initial_conditions:
-  - type: normal
-    sigma_u: 0.1
-    sigma_v: 0.1
-  - type: normal
-    sigma_u: 0.2
-    sigma_v: 0.2
 
 
 # num_samples_per_ball: 3

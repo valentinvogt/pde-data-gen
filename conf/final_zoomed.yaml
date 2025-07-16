@@ -1,13 +1,14 @@
 # Base configuration
 defaults:
+  - config
   - _self_
 
 # Model configuration
 model: bruss  # bruss, gray_scott, fhn
-dataset_id: transfer2
+dataset_id: final_zoomed
 dataset_type: ball  # ball, multi_ic or all_fixed
 center_definition: from_df  # from_grid or from_df
-df_path: "data/transfer_new.csv"  # Path to dataframe file with parameter points
+df_path: "data/final_zoomed.csv"  # Path to dataframe file with parameter points
 workdir_env_var: SCRATCHDIR # An environment variable of this name should exist
 
 # Grid configuration (used when center_definition is from_grid)
@@ -25,8 +26,8 @@ workdir_env_var: SCRATCHDIR # An environment variable of this name should exist
 sim_params:
   Nx: 128
   dx: 1.0
-  Nt: 60_000
-  dt: 0.0025
+  Nt: 150_000
+  dt: 0.001
   n_snapshots: 100
 
 # Initial conditions (list of configurations)
@@ -34,12 +35,15 @@ initial_conditions:
   - type: normal
     sigma_u: 0.1
     sigma_v: 0.1
+  - type: normal
+    sigma_u: 0.2
+    sigma_v: 0.2
 
 # Sampling parameters (for run_type: ball)
 sampling_std:
-  A: 0.05
-  B: 0.05
-  Du: 0.1
-  Dv: 0.1
+  A: 0.1
+  B: 0.1
+  Du: 0.3
+  Dv: 0.3
 num_samples_per_ball: 10
 num_samples_per_ic: 1

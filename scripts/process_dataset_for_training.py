@@ -173,7 +173,7 @@ if __name__ == "__main__":
 
     ds = xr.open_dataset(args.filename)
     # Extract dimensions
-    # n_runs = ds.sizes["run"]
+    n_runs = ds.sizes["run"]
     n_snapshots = ds.sizes["snapshot"]
 
     assert (
@@ -182,9 +182,9 @@ if __name__ == "__main__":
     # Assuming n_coupled_and_y_size_and_boundary is twice the y_size because
     # it contains the coupled variables u and v interleaved
 
-    # print("Reshaping")
-    # reshaped_data = reshape_data(ds)
-    reshaped_data = ds.to_dataarray()
+    print("Reshaping")
+    reshaped_data = reshape_data(ds)
+    # reshaped_data = ds.to_dataarray()
     if n_snapshots_target > 0:
         print("Downsampling")   
         reshaped_data = downsample_in_time(reshaped_data, n_snapshots_target)
@@ -233,7 +233,7 @@ if __name__ == "__main__":
 
         
     ds_final.rename({"run": "trajectory"})
-    ds_final = ds_final.chunk({"run": 128, "Nx": 32, "Ny": 32})
+    ds_final = ds_final.chunk({"trajectory": 128, "Nx": 32, "Ny": 32})
     # At this point, no computation has been done yet
     # To actually compute and save the result:
     print("Writing to file")

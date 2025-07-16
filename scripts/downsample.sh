@@ -4,12 +4,13 @@
 #SBATCH --error=downsample-%j.err
 #SBATCH --cpus-per-task=8
 #SBATCH --mem-per-cpu=16384
-#SBATCH --time=1:00:00
+#SBATCH --time=0:15:00
 #SBATCH --mail-type=END
 
 module load stack/2024-06 gcc/12.2.0 openmpi/4.1.6 nco/5.1.6
 MODEL="bruss"
-DATASET="final"
+DATASET="transfer2"
+
 DATA_DIR="/cluster/scratch/vogtva/data/$MODEL/$DATASET"
 IN_FILE="$DATA_DIR/_dataset.nc"
 WORK_DIR="$DATA_DIR/work"

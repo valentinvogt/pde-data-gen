@@ -343,14 +343,15 @@ def main(cfg: DictConfig):
                 seed = None
             ic_type = params.pop("ic_type")
             ic = ic_from_dict(params.pop("initial_condition"), ic_type)
-            run_wrapper(
-                ModelParams(**params),
-                sim_params,
-                ic,
-                dataset_info,
-                run_id=str(uuid4()),
-                random_seed=seed,
-            )
+            for _ in range(num_samples_per_ic):
+                run_wrapper(
+                    ModelParams(**params),
+                    sim_params,
+                    ic,
+                    dataset_info,
+                    run_id=str(uuid4()),
+                    random_seed=seed,
+                )
         else:
             raise ValueError(f"Invalid dataset_type: {dataset_type}")
 

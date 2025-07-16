@@ -33,6 +33,7 @@ class HexPatternIC(InitialCondition):
 def ic_from_dict(d: Dict, ic_type: str = None) -> InitialCondition:
     if type(d) is str:
         s_fixed = d.replace('""', '"')
+        s_fixed = s_fixed.replace("'", '"')
         d = json.loads(s_fixed)
     if ic_type is None:
         ic_type = d.get("type", None)
