@@ -33,12 +33,12 @@ from src.dataset_manager import DatasetManager, create_metadata_file
 print_filenames = False
 
 
-def create_input_wrapper(
+def run_wrapper(
     model_params: ModelParams,
     sim_params: SimParams,
     initial_condition: InitialCondition,
     ds_info: DatasetInfo,
-    traj_id: str,
+    run_id: str,
     random_seed: int = None,
     use_vti: bool = True,
     original_point: ModelParams = None,
@@ -56,15 +56,13 @@ def create_input_wrapper(
     fn_order = 4 if model == "fhn" else 3
     fn_scalings = f_scalings(model, A, B)
 
-    input_file = traj_id
-    if use_vti:
-        input_file += ".vti"
-    else:
-        input_file += ".nc"
+    input_file = run_id + ".vti"
     input_filename = os.path.join(ds_info.output_dir, input_file)
+    output_filename = input_filename.replace(".nc", "_output.nc")
 
     if random_seed is None:
         random_seed = randint(0, 2**31 - 1)
+    ic_function = get_ic_function(model, A, B, initial_condition, random_seed)
 
     if use_vti:
         u0, v0 = get_ic_data_vti(A, B, initial_condition, (Nx, Nx, 1), random_seed)
@@ -83,9 +81,6 @@ def create_input_wrapper(
             dx=dx,
         )
     else:
-        output_filename = input_filename.replace(".nc", "_output.nc")
-        ic_function = get_ic_function(model, A, B, initial_condition, random_seed)
-
         create_input_file(
             input_filename,
             output_filename,
@@ -126,7 +121,7 @@ def create_input_wrapper(
             "n_snapshots": n_snapshots,
             "filename": output_filename,
             "dataset_id": ds_id,
-            "traj_id": traj_id,
+            "run_id": run_id,
         }
 
         if original_point is not None:
@@ -134,10 +129,10 @@ def create_input_wrapper(
 
         dataset_file = ds_info.file
         with DatasetManager(dataset_file, "a") as dataset:
-            traj_index = dataset.get_traj_count()
-            dataset.add_traj_metadata(traj_index, log_dict)
+            run_index = dataset.get_run_count()
+            dataset.add_run_metadata(run_index, log_dict)
             log_dict["dataset_file"] = dataset_file
-            log_dict["traj_index"] = traj_index
+            log_dict["run_index"] = run_index
 
 
 def sample_ball(
@@ -166,12 +161,12 @@ def sample_ball(
 
         for ic in initial_conditions:
             for _ in range(num_samples_per_ic):
-                create_input_wrapper(
+                run_wrapper(
                     ModelParams(A=A_new, B=B_new, Du=Du_new, Dv=Dv_new),
                     sim_params,
                     ic,
                     dataset_info,
-                    traj_id=str(uuid4()),
+                    run_id=str(uuid4()),
                     original_point=model_params,
                     random_seed=None,
                     use_vti=use_vti,
@@ -237,36 +232,11 @@ def main(cfg: DictConfig):
     # Set up output directories
     data_dir = os.getenv(workdir_env_var, ".")
     output_dir = os.path.join(data_dir, "data", model, dataset_id)
-    abs_out_dir = os.path.abspath(output_dir)
     os.makedirs(output_dir, exist_ok=True)
 
-    #------ Save configuration for reference ------#
-    config_to_dump = {
-        "model": cfg.model,
-        "dataset_id": cfg.dataset_id,
-        "output_dir": abs_out_dir,
-        "use_vti": cfg.use_vti,
-        "dataset_type": cfg.dataset_type,
-        "center_definition": cfg.center_definition,
-        "sim_params": OmegaConf.to_container(cfg.sim_params, resolve=True),
-        "initial_conditions": OmegaConf.to_container(
-            cfg.initial_conditions, resolve=True
-        ),
-        "num_samples_per_ic": cfg.num_samples_per_ic,
-    }
-
-    if cfg.center_definition == "from_grid":
-        config_to_dump["grid_mode"] = cfg.grid_mode
-        config_to_dump["grid_params"] = OmegaConf.to_container(cfg.grid_params, resolve=True)
-    elif cfg.center_definition == "from_df":
-        config_to_dump["df_path"] = cfg.df_path
-
-    if cfg.dataset_type == "ball":
-        config_to_dump["sampling_std"] = OmegaConf.to_container(cfg.sampling_std, resolve=True)
-        config_to_dump["num_samples_per_ball"] = cfg.num_samples_per_ball
-
+    # Save configuration for reference
     with open(os.path.join(output_dir, "_config.json"), "w") as f:
-        json.dump(config_to_dump, f, indent=2)
+        json.dump(OmegaConf.to_container(cfg, resolve=True), f, indent=2)
 
     # Convert configuration to appropriate objects
     sim_params = SimParams(**cfg.sim_params)
@@ -285,9 +255,9 @@ def main(cfg: DictConfig):
     else:
         raise ValueError(f"Invalid center definition: {center_definition}")
 
-    # Create consolidation nc file (if netcdf mode)
+    # Create metadata for this dataset
     dataset_file = os.path.join(output_dir, "_dataset.nc")
-    if not os.path.exists(dataset_file) and not use_vti:
+    if not os.path.exists(dataset_file):
         dataset_file = create_metadata_file(
             output_dir, OmegaConf.to_container(cfg, resolve=True)
         )
@@ -328,12 +298,12 @@ def main(cfg: DictConfig):
         elif dataset_type == "multi_ic":
             for ic in initial_conditions:
                 for _ in range(num_samples_per_ic):
-                    create_input_wrapper(
+                    run_wrapper(
                         ModelParams(**params),
                         sim_params,
                         ic,
                         dataset_info,
-                        traj_id=str(uuid4()),
+                        run_id=str(uuid4()),
                         random_seed=None,
                         use_vti=use_vti,
                     )
@@ -345,12 +315,12 @@ def main(cfg: DictConfig):
             ic_type = params.pop("ic_type")
             ic = ic_from_dict(params.pop("initial_condition"), ic_type)
             for _ in range(num_samples_per_ic):
-                create_input_wrapper(
+                run_wrapper(
                     ModelParams(**params),
                     sim_params,
                     ic,
                     dataset_info,
-                    traj_id=str(uuid4()),
+                    run_id=str(uuid4()),
                     random_seed=seed,
                     use_vti=use_vti,
                 )

@@ -12,8 +12,8 @@ module load stack/2024-06 python/3.11.6
 
 source .env
 model="bruss"
-dataset_id="default_bruss"
-DATAPATH="./data/$model/$dataset_id"
+dataset_id="transfer2"
+DATAPATH="$SCRATCHDIR/data/$model/$dataset_id"
 
 for dir in $DATAPATH/out-*; do
     start=$(date +%s.%N)
@@ -35,6 +35,6 @@ for dir in $DATAPATH/out-*; do
     rm $dir/*.vti
 done
 
-./scripts/merge_nc_trajectories.sh $DATAPATH
+./scripts/merge.sh $DATAPATH
 
 # python3 src/classify.py --model $model --ds_id $dataset_id --time_ratio 0.2 --directory_var SCRATCHDIR --mode new

@@ -13,4 +13,4 @@ module load python/3.11.6
 HDF5_USE_FILE_LOCKING=FALSE
 set -a && source .env
 
-python scripts/create_inputs.py use_vti=true
+python scripts/create_inputs.py --config-name=rough

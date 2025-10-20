@@ -81,7 +81,7 @@ class Dataset:
         self.df[column_name] = values
         if write_into_nc:
             if column_name not in self.dataset.variables:
-                self.dataset.createVariable(column_name, "f8", ("run",))
+                self.dataset.createVariable(column_name, "f8", ("trajectory",))
             self.dataset.variables[column_name][:] = values
         else:
             self.df.to_csv(self.df_file, index=False)
