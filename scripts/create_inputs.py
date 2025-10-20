@@ -216,10 +216,10 @@ def parameters_from_df(df_path: str) -> List[Dict[str, float]]:
     elif "random_seed" in df.columns:
         df = df.rename(columns={"random_seed": "seed"})
         cols.append("seed")
-    if "initial_condition" in df.columns:
-        cols.append("initial_condition")
-        cols.append("ic_type")
-    df = df[cols]
+    # if "initial_condition" in df.columns:
+    #     cols.append("initial_condition")
+    #     cols.append("ic_type")
+    # df = df[cols]
     return df.to_dict(orient="records")
 
 

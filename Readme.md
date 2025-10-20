@@ -7,6 +7,7 @@ This repository contains convenience code to simulate the Brusselator and Gray-S
     ```
     See `conf/README.md` for details on the format.
 There are two available solvers: `pde-solvers-cuda` and `ready`.
+
 ### Ready
 1. Create inputs:
     ```sh
@@ -33,6 +34,7 @@ There are two available solvers: `pde-solvers-cuda` and `ready`.
     ```
 3. Run 
     ``` 
+
 ## Documentation
 Before running python files:
 ```sh

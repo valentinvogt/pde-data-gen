@@ -8,7 +8,7 @@
 #SBATCH --mem-per-cpu=8192
 #SBATCH --time=1:00:00
 
-module load stack/2024-06 python/3.11.6
+# module load stack/2024-06 python/3.11.6
 
 source .env
 model="bruss"
@@ -36,5 +36,3 @@ for dir in $DATAPATH/out-*; do
 done
 
 ./scripts/merge_nc_trajectories.sh $DATAPATH
-
-# python3 src/classify.py --model $model --ds_id $dataset_id --time_ratio 0.2 --directory_var SCRATCHDIR --mode new
