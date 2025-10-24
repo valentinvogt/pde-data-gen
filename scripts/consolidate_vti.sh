@@ -8,14 +8,16 @@
 #SBATCH --mem-per-cpu=8192
 #SBATCH --time=1:00:00
 
-# module load stack/2024-06 python/3.11.6
-
 source .env
+if [ "$ON_SLURM" = true ] ; then
+    module load stack/2024-06 python/3.11.6
+fi
+set -eo pipefail   
 model="bruss"
-dataset_id="default_bruss"
-DATAPATH="./data/$model/$dataset_id"
+dataset_id="default_vti"
+DATAPATH="$WORK_DIR/$model/$dataset_id"
 
-for dir in $DATAPATH/out-*; do
+for dir in "$DATAPATH"/out-*; do
     start=$(date +%s.%N)
     # get the last part of the directory name after the out-
     dir_name=$(basename "$dir")
@@ -28,11 +30,16 @@ for dir in $DATAPATH/out-*; do
         continue
     fi
     echo "Processing directory: $dir_name"
-    python scripts/gather_vti.py $dir --input-filename "$DATAPATH/$dir_name.vti" --output $output_file
+    python scripts/gather_vti.py "$dir" --input-filename "$DATAPATH/$dir_name.vti" --output "$output_file"
     end=$(date +%s.%N)
     duration=$(echo "$end - $start" | bc)
     echo "$dir_name took $duration seconds"
-    rm $dir/*.vti
+    rm "$dir"/*.vti
 done
 
-./scripts/merge_nc_trajectories.sh $DATAPATH
+./scripts/merge_nc_trajectories.sh "$DATAPATH"
+
+# Inject metadata from JSON files into the merged dataset
+echo "Injecting metadata into merged dataset..."
+python scripts/inject_metadata.py "$DATAPATH/_dataset.nc"
+echo "Metadata injection complete"

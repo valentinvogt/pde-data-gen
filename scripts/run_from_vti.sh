@@ -10,11 +10,16 @@
 #SBATCH --time=2:00:00
 #SBATCH --mail-type=END
 
-module load stack/2024-05 gcc/13.2.0 jq/1.6
 source .env
+if [ "$ON_SLURM" = true ] ; then
+    module load stack/2024-05
+    module load gcc/13.2.0
+    module load jq/1.6
+fi
+
 model="bruss"
-dataset_id="default_bruss"
-DATAPATH="./data/$model/$dataset_id"
+dataset_id="default_vti"
+DATAPATH="$WORK_DIR/$model/$dataset_id"
 CONFIG_FILE="$DATAPATH/_config.json"
 
 # test Ready availability 
@@ -23,7 +28,7 @@ CONFIG_FILE="$DATAPATH/_config.json"
 Nt=$(jq -r '.sim_params.Nt' "$CONFIG_FILE")
 n_snapshots=$(jq -r '.sim_params.n_snapshots' "$CONFIG_FILE")
 
-for file in $DATAPATH/*.vti; do
+for file in "$DATAPATH"/*.vti; do
     start=$(date +%s.%N)
     # remove .vti extension and add _out.nc
     file_name=$(basename "$file" .vti)

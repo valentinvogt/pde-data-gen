@@ -1,5 +1,8 @@
 #!/bin/bash
-module load stack/2024-06  gcc/12.2.0  openmpi/4.1.6 nco/5.1.6
+source .env
+if [ "$ON_SLURM" = true ] ; then
+    module load stack/2024-06  gcc/12.2.0  openmpi/4.1.6 nco/5.1.6
+fi
 
 # Overwrite existing files
 set -o noclobber
@@ -15,7 +18,7 @@ output_file="$DIR/_dataset.nc"
 rm "$output_file"
 
 # Step 1: Add 'trajectory' dimension to each file
-for file_in in $DIR/*.nc; do
+for file_in in "$DIR"/*.nc; do
     echo $file_in
     # skip file beginning with '_'
     if [[ $(basename "$file_in") == _* ]]; then

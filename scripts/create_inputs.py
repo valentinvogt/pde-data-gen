@@ -1,6 +1,7 @@
 import numpy as np
 from numpy.random import uniform, randint
 import os
+import sys
 import json
 import hydra
 from omegaconf import DictConfig, OmegaConf
@@ -10,8 +11,9 @@ from uuid import uuid4
 import pandas as pd
 from typing import List, Dict
 from itertools import product
-from src.create_netcdf_input import create_input_file
+
 from src.create_vti_input import create_vti_input
+from src.create_netcdf_input import create_input_file
 from src.setup_helpers import (
     f_scalings,
     zero_func,
@@ -28,7 +30,7 @@ from src.initial_conditions import (
     get_ic_data_vti,
 )
 
-from src.dataset_manager import DatasetManager, create_metadata_file
+from src.metadata_store import MetadataStore
 
 print_filenames = False
 
@@ -61,15 +63,18 @@ def create_input_wrapper(
         input_file += ".vti"
     else:
         input_file += ".nc"
-    input_filename = os.path.join(ds_info.output_dir, input_file)
+    input_file = os.path.join(ds_info.output_dir, input_file)
 
     if random_seed is None:
         random_seed = randint(0, 2**31 - 1)
 
+    # Determine output filename based on format
     if use_vti:
+        # For VTI, output will be a directory of VTI files
+        output_filename = input_file.replace(".vti", "_output")
         u0, v0 = get_ic_data_vti(A, B, initial_condition, (Nx, Nx, 1), random_seed)
         create_vti_input(
-            input_filename,
+            input_file,
             model,
             Du,
             Dv,
@@ -83,11 +88,11 @@ def create_input_wrapper(
             dx=dx,
         )
     else:
-        output_filename = input_filename.replace(".nc", "_output.nc")
+        output_filename = input_file.replace(".nc", "_output.nc")
         ic_function = get_ic_function(model, A, B, initial_condition, random_seed)
 
         create_input_file(
-            input_filename,
+            input_file,
             output_filename,
             type_of_equation=2,
             x_size=Nx,
@@ -110,34 +115,34 @@ def create_input_wrapper(
             Dv=Dv,
         )
 
-        log_dict = {
-            "model": model,
-            "A": A,
-            "B": B,
-            "Nx": Nx,
-            "dx": dx,
-            "Nt": Nt,
-            "dt": dt,
-            "Du": Du,
-            "Dv": Dv,
-            "ic_type": get_ic_type(initial_condition),
-            "initial_condition": ic_data,
-            "random_seed": random_seed,
-            "n_snapshots": n_snapshots,
-            "filename": output_filename,
-            "dataset_id": ds_id,
-            "traj_id": traj_id,
-        }
+    # Save metadata to JSON file for later injection into NetCDF
+    log_dict = {
+        "model": model,
+        "A": A,
+        "B": B,
+        "Nx": Nx,
+        "dx": dx,
+        "Nt": Nt,
+        "dt": dt,
+        "Du": Du,
+        "Dv": Dv,
+        "ic_type": get_ic_type(initial_condition),
+        "initial_condition": ic_data,
+        "random_seed": random_seed,
+        "n_snapshots": n_snapshots,
+        "filename": output_filename,
+        "dataset_id": ds_id,
+        "traj_id": traj_id,
+        "input_file": input_file,
+        "use_vti": use_vti,
+    }
 
-        if original_point is not None:
-            log_dict["original_point"] = original_point.model_dump()
+    if original_point is not None:
+        log_dict["original_point"] = original_point.model_dump()
 
-        dataset_file = ds_info.file
-        with DatasetManager(dataset_file, "a") as dataset:
-            traj_index = dataset.get_traj_count()
-            dataset.add_traj_metadata(traj_index, log_dict)
-            log_dict["dataset_file"] = dataset_file
-            log_dict["traj_index"] = traj_index
+    # Save metadata as JSON
+    metadata_store = MetadataStore.create(ds_info.output_dir)
+    metadata_store.save_metadata(traj_id, log_dict)
 
 
 def sample_ball(
@@ -233,10 +238,9 @@ def main(cfg: DictConfig):
     center_definition = cfg.center_definition
     workdir_env_var = cfg.workdir_env_var
     use_vti = cfg.use_vti
-
     # Set up output directories
     data_dir = os.getenv(workdir_env_var, ".")
-    output_dir = os.path.join(data_dir, "data", model, dataset_id)
+    output_dir = os.path.join(data_dir, model, dataset_id)
     abs_out_dir = os.path.abspath(output_dir)
     os.makedirs(output_dir, exist_ok=True)
 
@@ -285,21 +289,14 @@ def main(cfg: DictConfig):
     else:
         raise ValueError(f"Invalid center definition: {center_definition}")
 
-    # Create consolidation nc file (if netcdf mode)
-    dataset_file = os.path.join(output_dir, "_dataset.nc")
-    if not os.path.exists(dataset_file) and not use_vti:
-        dataset_file = create_metadata_file(
-            output_dir, OmegaConf.to_container(cfg, resolve=True)
-        )
-        print(f"Created dataset file: {dataset_file}")
-    else:
-        print(f"Appending to {dataset_file}")
+    # Create metadata store directory
+    metadata_store = MetadataStore.create(output_dir)
+    print(f"Using metadata directory: {metadata_store.metadata_dir}")
 
     dataset_info = DatasetInfo(
         model=model,
         type=dataset_type,
         id=dataset_id,
-        file=dataset_file,
         output_dir=output_dir,
     )
 

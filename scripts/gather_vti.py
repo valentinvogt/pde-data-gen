@@ -5,9 +5,8 @@ from pathlib import Path
 import xml.etree.ElementTree as ET
 
 
-def gather_vti_files(path: Path, output: Path = Path("gathered_data.nc"), input_filename = None):
+def gather_vti_files(path: Path, output: Path = Path("gathered_data.nc"), input_file = None):
     files = sorted(path.glob("*.vti"), key=lambda f: int(f.stem.split(".")[0]))
-
     if not files:
         raise ValueError("No VTI files found in the specified directory.")
     first_file = files[0]
@@ -64,9 +63,9 @@ def gather_vti_files(path: Path, output: Path = Path("gathered_data.nc"), input_
             "Dv": (["trajectory"], [D_b]),
             "A": (["trajectory"], [alpha]),
             "B": (["trajectory"], [beta]),
-            "input_filename": (
+            "input_file": (
                 ["trajectory"],
-                [input_filename if input_filename else ""],
+                [input_file if input_file else ""],
             ),
         },
         coords={

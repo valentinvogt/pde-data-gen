@@ -3,7 +3,8 @@
 ###################################################
 import numpy as np
 import os
-from src.db_tools import Dataset, compute_metrics, get_metrics_array
+from src.trajectory_dataset import TrajectoryDataset
+from src.db_tools import compute_metrics, get_metrics_array
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 from mpl_toolkits.axes_grid1 import ImageGrid
@@ -69,7 +70,7 @@ def make_animation(data, filename_no_ext, out_dir, mode="old"):
 
 
 def plot_grid(
-    dataset: Dataset,
+    dataset: TrajectoryDataset,
     component_idx=0,
     frame=-1,
     sigdigits=3,
@@ -143,7 +144,7 @@ def plot_grid(
 
 
 def metrics_grid(
-    dataset: Dataset,
+    dataset: TrajectoryDataset,
     start_frame=0,
     sigdigits=3,
     joint=False,
@@ -296,7 +297,7 @@ def metrics_grid(
 
 
 def plot_ball_behavior(
-    dataset: Dataset, start_frame=0, metric="dev", joint=False, fig=None, label=None
+    dataset: TrajectoryDataset, start_frame=0, metric="dev", joint=False, fig=None, label=None
 ):
     """
     Plot the mean and mean + std of the given metric,

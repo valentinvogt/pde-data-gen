@@ -8,7 +8,7 @@ dataset_id: default_bruss
 dataset_type: multi_ic  # ball, multi_ic or all_fixed
 center_definition: from_grid  # from_grid or from_df
 df_path: null  # Path to dataframe file with parameter points
-workdir_env_var: None # An environment variable of this name should exist
+workdir_env_var: WORK_DIR # An environment variable of this name should exist
 use_vti: false
 
 # Grid configuration (used when center_definition is from_grid)

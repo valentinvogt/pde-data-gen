@@ -3,8 +3,8 @@ import sys
 import pandas as pd
 import argparse
 
-from src.db_tools import Dataset, get_dataset
-from src.analysis import (
+from pde_data_gen.trajectory_dataset import TrajectoryDataset, get_dataset
+from pde_data_gen.analysis import (
     classify_frames_pca,
     classify_pattern,
     classify_temporal_behavior,
@@ -12,7 +12,7 @@ from src.analysis import (
 )
 
 
-def compute_classification_metrics(ds: Dataset, time_ratio=0.1, mode="old") -> pd.DataFrame:
+def compute_classification_metrics(ds: TrajectoryDataset, time_ratio=0.1, mode="old") -> pd.DataFrame:
     df = ds.df
     n = len(df)
     if n == 0:
@@ -44,9 +44,10 @@ def compute_classification_metrics(ds: Dataset, time_ratio=0.1, mode="old") -> p
 
     for col in df.columns:
         if col not in ds.df.columns:
-            ds.add_column(col, df[col].values, write_into_nc=False)
+            ds.add_column(col, df[col].values)
 
-    ds.dataset.close()
+    ds.save()
+    ds.close()
     return ds
 
 
@@ -61,17 +62,19 @@ if __name__ == "__main__":
     ds, _ = get_dataset(args.model, args.ds_id, args.directory_var)
 
     if args.mode == "old":
-        final_frames_u = ds.dataset["data"][:, -1, :, 0::2]
+        final_frames_u = ds.ds["data"][:, -1, :, 0::2]
     else:
-        final_frames_u = ds.dataset["data"][:, -1, 0, :, :]
+        final_frames_u = ds.ds["data"][:, -1, 0, :, :]
         if not isinstance(final_frames_u, np.ndarray):
             final_frames_u = final_frames_u.values
     compute_classification_metrics(ds, time_ratio=args.time_ratio, mode=args.mode)
 
     labels = classify_frames_pca(final_frames_u, n_components=10, n_clusters=3)
-    ds.add_column("pca_label", labels, write_into_nc=False)
+    ds.add_column("pca_label", labels)
 
     classes = classify_pattern(final_frames_u)
-    ds.add_column("pattern_class", classes, write_into_nc=False)
+    ds.add_column("pattern_class", classes)
+
+    ds.save()
 
     print(f"Added classification metrics to {ds.ds_file}")

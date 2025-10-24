@@ -35,7 +35,6 @@ class DatasetInfo(BaseModel):
     model: str  # bruss, gray_scott, fhn are supported
     type: str  # ball, multi_ic or all_fixed
     id: str  # identifier of the dataset
-    file: str  # full name of the consolidated netcdf, currently output_dir/_dataset.nc
     output_dir: str  # full output directory where nc and json files are generated
 
     @classmethod
