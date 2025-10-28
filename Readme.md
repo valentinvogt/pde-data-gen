@@ -1,42 +1,23 @@
-This repository contains convenience code to simulate the Brusselator and Gray-Scott models using a [fork](https://github.com/valentinvogt/pde-solvers-cuda) of Louis Hurschler's [pde-solvers-cuda](https://github.com/LouisHurschler/pde-solvers-cuda).
+# PDE Data Generation
 
-## Workflow
-1. Generate inputs from a config file. For `conf/example.yaml`, run:
-    ```sh
-    python scripts/create_inputs.py --config-name=example
-    ```
-    See `conf/README.md` for details on the format.
-There are two available solvers: `pde-solvers-cuda` and `ready`.
+Tools for generating and processing reaction-diffusion PDE simulation data.
 
-### Ready
-1. Create inputs:
-    ```sh
-    python scripts/create_inputs.py --config-name=example --use-vti=True
-    ```
-2. Run the solver. For this, the executable `rdy` should be in the `build` directory. Make sure to adjust "model" and "dataset_id" in the script:
-    ```sh
-    sbatch scripts/run_vti.sh
-    ```
-3. Run 
-    ```
-    scripts/consolidate_vti.sh
-    ```
-    with the same "model" and "dataset_id".
+## Setup
 
-### pde-solvers-cuda
-1. Create inputs:
-    ```sh
-    python scripts/create_inputs.py --config-name=example
-    ```
-2. Run the solver. For this, the executable `run_from_netcdf` should be in the `build` directory. 
-    ```
-    sbatch scripts/run_from_inputs.sh
-    ```
-3. Run 
-    ``` 
-
-## Documentation
-Before running python files:
-```sh
-set -a && source .env
+```bash
+pip install -e .
 ```
+
+## Structure
+
+- `src/` - Core modules for data generation and processing
+- `scripts/` - Runner and processing scripts
+- `analysis/` - Analysis notebooks and scripts
+- `data/` - Input parameter sets
+- `conf/` - Configuration files, default: `conf/config.yaml`
+- `test/` - Scripts for running the whole pipeline
+
+## Solvers
+There are two solvers to choose from:
+- `run_from_netcdf`, based on a [fork](https://github.com/valentinvogt/pde-solvers-cuda) of Louis Hurschler's [pde-solvers-cuda](https://github.com/LouisHurschler/pde-solvers-cuda). See `test/nc_pipeline.sh` for an example.
+- `ready`, using a fork (to be uploaded) of [Ready](https://https://github.com/GollyGang/ready). See `test/vti_pipeline.sh`.
