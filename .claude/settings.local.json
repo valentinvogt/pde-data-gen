@@ -1,7 +1,9 @@
 {
   "permissions": {
     "allow": [
-      "Bash(python test_metadata_workflow.py:*)"
+      "Bash(python test_metadata_workflow.py:*)",
+      "Bash(python:*)",
+      "Bash(PYTHONPATH=/Users/vv/eth/_alte\\ semester/25fs/bachelor/pde-data-gen2:$PYTHONPATH python:*)"
     ],
     "deny": [],
     "ask": []

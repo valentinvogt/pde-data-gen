@@ -33,7 +33,6 @@ def gather_vti_files(path: Path, output: Path = Path("gathered_data.nc"), input_
             alpha = float(alpha_element.text) if alpha_element is not None else None
             beta = float(beta_element.text) if beta_element is not None else None
             dx = float(dx_element.text) if dx_element is not None else None
-            print(f"Timestep: {timestep}, D_a: {D_a}, D_b: {D_b}, Alpha: {alpha}, Beta: {beta}")
         else:
             print("Rule element not found.")
     else:
@@ -84,7 +83,7 @@ def gather_vti_files(path: Path, output: Path = Path("gathered_data.nc"), input_
         },
     )
     res.to_netcdf(output, mode="w", format="NETCDF4")
-    print(f"Gathered {len(files)} VTI files into {output}")
+    print(f"Gathered {len(files)} VTI files")
 
 
 if __name__ == "__main__":

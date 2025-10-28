@@ -17,8 +17,11 @@ if [ "$ON_SLURM" = true ] ; then
     module load jq/1.6
 fi
 
-model="bruss"
-dataset_id="default_vti"
+# Accept command-line arguments with defaults
+# Usage: ./run_from_vti.sh [model] [dataset_id]
+# Or with sbatch: sbatch scripts/run_from_vti.sh gs my_dataset
+model="${1:-bruss}"
+dataset_id="${2:-default_vti}"
 DATAPATH="$WORK_DIR/$model/$dataset_id"
 CONFIG_FILE="$DATAPATH/_config.json"
 
@@ -28,6 +31,7 @@ CONFIG_FILE="$DATAPATH/_config.json"
 Nt=$(jq -r '.sim_params.Nt' "$CONFIG_FILE")
 n_snapshots=$(jq -r '.sim_params.n_snapshots' "$CONFIG_FILE")
 
+echo "Running Ready on VTI files in $DATAPATH for $n_snapshots snapshots..."
 for file in "$DATAPATH"/*.vti; do
     start=$(date +%s.%N)
     # remove .vti extension and add _out.nc
@@ -49,5 +53,5 @@ for file in "$DATAPATH"/*.vti; do
     build/rdy -i "$file" -o "tmp.vti" -n $Nt --snapshot-path "$out_dir" --num-snapshots $n_snapshots
     end=$(date +%s.%N)
     duration=$(echo "$end - $start" | bc)
-    echo "$file took $duration seconds"
+    echo "Solution took $duration seconds"
 done

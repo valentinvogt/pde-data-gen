@@ -1,7 +1,6 @@
 import numpy as np
 from numpy.random import uniform, randint
 import os
-import sys
 import json
 import hydra
 from omegaconf import DictConfig, OmegaConf
@@ -291,7 +290,6 @@ def main(cfg: DictConfig):
 
     # Create metadata store directory
     metadata_store = MetadataStore.create(output_dir)
-    print(f"Using metadata directory: {metadata_store.metadata_dir}")
 
     dataset_info = DatasetInfo(
         model=model,
@@ -353,8 +351,9 @@ def main(cfg: DictConfig):
                 )
         else:
             raise ValueError(f"Invalid dataset_type: {dataset_type}")
+    
+    print("All inputs created in:", abs_out_dir)
 
 
 if __name__ == "__main__":
     main()
-    print("Successfully generated inputs")

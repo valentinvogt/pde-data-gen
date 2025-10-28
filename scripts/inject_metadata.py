@@ -168,8 +168,8 @@ def inject_metadata(
     if not os.path.exists(metadata_dir):
         raise FileNotFoundError(f"Metadata directory not found: {metadata_dir}")
 
-    print(f"Loading dataset from: {dataset_file}")
-    print(f"Loading metadata from: {metadata_dir}")
+    # print(f"Loading dataset from: {dataset_file}")
+    # print(f"Loading metadata from: {metadata_dir}")
 
     # Load metadata
     store = MetadataStore(os.path.dirname(metadata_dir), os.path.basename(metadata_dir))
@@ -184,18 +184,20 @@ def inject_metadata(
     # Load dataset (load into memory to avoid conflicts)
     ds = xr.load_dataset(dataset_file)
     n_trajectories = len(ds.trajectory)
-    print(f"Dataset has {n_trajectories} trajectories")
+    assert n_trajectories > 0, "No trajectories found in dataset"
+    assert n_trajectories == len(metadata_list), (
+        f"Trajectory count ({n_trajectories}) does not match "
+        f"metadata count ({len(metadata_list)})"
+    )
 
     # Match trajectories to metadata
     ordered_metadata = match_trajectories_to_metadata(ds, metadata_list, match_field)
 
     # Inject metadata
-    print("Injecting metadata into dataset...")
     ds = inject_metadata_into_dataset(ds, ordered_metadata)
 
     # Save to output file
     output_path = output_file or dataset_file
-    print(f"Saving dataset to: {output_path}")
 
     # Use compression for efficiency
     encoding = {}
@@ -203,8 +205,6 @@ def inject_metadata(
         encoding["data"] = {"zlib": True, "complevel": 4}
 
     ds.to_netcdf(output_path, encoding=encoding)
-
-    print("Metadata injection complete!")
 
 
 def main():

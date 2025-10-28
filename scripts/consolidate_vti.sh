@@ -1,7 +1,7 @@
 #!/bin/bash
-#SBATCH --job-name=cons-fz
-#SBATCH --output=cons-fz-%j.out
-#SBATCH --error=cons-fz-%j.err
+#SBATCH --job-name=cons-vti
+#SBATCH --output=cons-vti-%j.out
+#SBATCH --error=cons-vti-%j.err
 #SBATCH --ntasks=1
 #SBATCH --nodes=1
 #SBATCH --cpus-per-task=4
@@ -12,9 +12,13 @@ source .env
 if [ "$ON_SLURM" = true ] ; then
     module load stack/2024-06 python/3.11.6
 fi
-set -eo pipefail   
-model="bruss"
-dataset_id="default_vti"
+set -eo pipefail
+
+# Accept command-line arguments with defaults
+# Usage: ./consolidate_vti.sh [model] [dataset_id]
+# Or with sbatch: sbatch scripts/consolidate_vti.sh gs my_dataset
+model="${1:-bruss}"
+dataset_id="${2:-default_vti}"
 DATAPATH="$WORK_DIR/$model/$dataset_id"
 
 for dir in "$DATAPATH"/out-*; do
@@ -40,6 +44,4 @@ done
 ./scripts/merge_nc_trajectories.sh "$DATAPATH"
 
 # Inject metadata from JSON files into the merged dataset
-echo "Injecting metadata into merged dataset..."
 python scripts/inject_metadata.py "$DATAPATH/_dataset.nc"
-echo "Metadata injection complete"

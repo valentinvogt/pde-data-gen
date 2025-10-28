@@ -1,0 +1,34 @@
+# Test configuration for VTI pipeline
+model: gray_scott
+dataset_id: test_vti_pipeline
+dataset_type: multi_ic
+center_definition: from_grid
+workdir_env_var: WORK_DIR
+use_vti: true
+
+# Grid configuration
+grid_mode: absolute
+grid_params:
+  A: [1.0, 1.5]
+  B: [2.0, 2.5]
+  Du: [1.0]
+  Dv: [8.0]
+
+# Simulation parameters (small for fast testing)
+sim_params:
+  Nx: 32
+  dx: 1.0
+  Nt: 100
+  dt: 0.01
+  n_snapshots: 5
+
+# Initial conditions
+initial_conditions:
+  - type: normal
+    sigma_u: 0.1
+    sigma_v: 0.1
+  - type: point_sources
+    density: 0.1
+
+# Sampling parameters
+num_samples_per_ic: 2

@@ -11,6 +11,9 @@
 #SBATCH --mail-type=END
 
 source .env
+set -eo pipefail
+USE_CUDA=0
+VERBOSE=0
 
 if [ "$ON_SLURM" = true ] ; then
     module load stack/2024-06
@@ -21,14 +24,16 @@ if [ "$ON_SLURM" = true ] ; then
     module load openmpi/4.1.6
     module load netcdf-c/4.9.2
     module load python/3.11.6
+    USE_CUDA=1
 fi
 
-# ADAPT THESE
-model="bruss"
-dataset_id="default_bruss"
+# Accept command-line arguments with defaults
+# Usage: ./run_from_nc.sh [model] [dataset_id]
+# Or with sbatch: sbatch scripts/run_from_nc.sh model my_dataset
+model="${1:-bruss}"
+dataset_id="${2:-default_bruss}"
 
 DATAPATH="$WORK_DIR/$model/$dataset_id"
-echo $DATAPATH
 
 for file in "$DATAPATH"/*.nc; do
     # Skip files that aren't input files
@@ -37,8 +42,9 @@ for file in "$DATAPATH"/*.nc; do
     fi
 
     # echo "Processing $file"
-    build/run_from_netcdf "$file"
+    build/run_from_netcdf "$file" $USE_CUDA $VERBOSE
 done
+echo "All simulations for dataset '$dataset_id' completed."
 
 # Consolidate outputs and inject metadata
 $PYTHON_CMD scripts/consolidate_nc.py "$DATAPATH"

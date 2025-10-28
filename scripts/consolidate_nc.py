@@ -66,14 +66,10 @@ def merge_output_files(output_files: List[str], output_path: str):
         output_files: List of paths to output files
         output_path: Path for the merged output file
     """
-    print(f"Merging {len(output_files)} output files...")
-
     datasets = []
     input_files = []
 
     for i, file in enumerate(output_files):
-        print(f"  [{i+1}/{len(output_files)}] Loading {os.path.basename(file)}")
-
         try:
             # Load the output file
             ds = xr.open_dataset(file)
@@ -136,7 +132,6 @@ def merge_output_files(output_files: List[str], output_path: str):
         sys.exit(1)
 
     # Concatenate along a new 'trajectory' dimension
-    print(f"\nConcatenating {len(datasets)} trajectories...")
     merged_ds = xr.concat(datasets, dim="trajectory")
 
     # Add input_file variable for matching with metadata
@@ -149,11 +144,10 @@ def merge_output_files(output_files: List[str], output_path: str):
     merged_ds["trajectory"] = np.arange(len(datasets))
 
     # Save merged dataset
-    print(f"Saving merged dataset to {output_path}")
     encoding = {"data": {"zlib": True, "complevel": 4}}
     merged_ds.to_netcdf(output_path, encoding=encoding)
 
-    print(f"✓ Merged dataset saved: {output_path}")
+    print(f"Merged dataset saved: {output_path}")
 
 
 def inject_metadata_into_dataset(dataset_file: str, metadata_dir: str):
@@ -166,14 +160,12 @@ def inject_metadata_into_dataset(dataset_file: str, metadata_dir: str):
     """
     from scripts.inject_metadata import inject_metadata
 
-    print(f"\nInjecting metadata from {metadata_dir}...")
+    print(f"Injecting metadata from {metadata_dir}")
     inject_metadata(
         dataset_file=dataset_file,
         metadata_dir=metadata_dir,
         match_field="input_file"
     )
-    print("✓ Metadata injection complete")
-
 
 def consolidate_outputs(dataset_dir: str):
     """
@@ -213,15 +205,12 @@ def consolidate_outputs(dataset_dir: str):
             inject_metadata_into_dataset(merged_file, metadata_dir)
         else:
             print(f"\nWarning: No metadata files found in {metadata_dir}")
-            print("Skipping metadata injection.")
+            print("Skipping metadata.")
     else:
         print(f"\nWarning: Metadata directory not found: {metadata_dir}")
-        print("Skipping metadata injection.")
+        print("Skipping metadata.")
 
-    print("\n" + "=" * 60)
-    print("✓ Consolidation complete!")
-    print("=" * 60)
-    print(f"Output file: {merged_file}")
+    print("Consolidation complete!")
 
 
 if __name__ == "__main__":

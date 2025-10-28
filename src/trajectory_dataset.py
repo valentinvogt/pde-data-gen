@@ -472,6 +472,8 @@ def expand_json_column(
     """
     Expand a column containing JSON strings into dict or individual columns.
 
+    Works correctly even when rows have different JSON structures (e.g., mixed IC types).
+
     Args:
         df: Input dataframe
         column: Name of column containing JSON strings
@@ -488,8 +490,16 @@ def expand_json_column(
     df[short_name] = df[column].apply(json.loads)
 
     if all_fields and len(df) > 0:
-        first_dict = df[short_name].iloc[0]
-        for field in first_dict.keys():
-            df[f"{short_name}_{field}"] = df[short_name].apply(lambda x: x.get(field))
+        # Collect all unique keys from all rows
+        all_keys = set()
+        for item in df[short_name]:
+            if isinstance(item, dict):
+                all_keys.update(item.keys())
+
+        # Create columns for all unique keys
+        for field in sorted(all_keys):
+            df[f"{short_name}_{field}"] = df[short_name].apply(
+                lambda x: x.get(field) if isinstance(x, dict) else None
+            )
 
     return df

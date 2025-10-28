@@ -7,6 +7,7 @@ import os
 import pandas as pd
 import json
 import xarray as xr
+
 ############################################
 #          Dataset Definition              #
 ############################################
@@ -15,21 +16,21 @@ import xarray as xr
 def df_from_nc(ds) -> pd.DataFrame:
     """
     Convert a NetCDF dataset to a pandas DataFrame.
-    
-    Extracts all variables from the dataset except 'data', 'time', and 'input_file',
+
+    Extracts all variables from the dataset except 'data' and 'time'
     and converts them to DataFrame columns.
-    
+
     Args:
         ds: A NetCDF4 Dataset object containing variables to be converted
-        
+
     Returns:
         pandas.DataFrame: DataFrame containing all extracted variables
     """
     df = pd.DataFrame()
     for var in ds.data_vars:
-        if var not in ["data", "time"]: #, "time", "input_file", "component", "snapshot"]:
+        if var not in ["data", "time"]:
             df[var] = ds[var][:]
-            
+
     if "n_snapshots" in ds.attrs:
         df["n_snapshots"] = ds.attrs["n_snapshots"]
     return df
@@ -37,9 +38,7 @@ def df_from_nc(ds) -> pd.DataFrame:
 
 class Dataset:
     """
-    This is a wrapper to be used for analysis. Not
-    to be confused with DatasetManager, which is used
-    for the creation of the consolidated NetCDF file.
+    This is a wrapper to be used for analysis.
     """
 
     def __init__(self, data_dir, model, ds_id, ds_file="_dataset.nc"):
@@ -51,7 +50,7 @@ class Dataset:
         if not os.path.exists(self.ds_file):
             raise FileNotFoundError(self.ds_file)
         self.dataset = xr.open_dataset(self.ds_file)
-        
+
         self.df_file = self.ds_file.replace(".nc", ".csv")
         if os.path.exists(self.df_file):
             self.df = pd.read_csv(self.df_file)
@@ -60,9 +59,6 @@ class Dataset:
             self.df = df_from_nc(self.dataset)
             self.df["idx"] = self.df.index
             self.df.to_csv(self.df_file, index=False)
-        
-        # self.df["filename"] = self.df["output_file"]
-        # self.df.drop(columns=["output_file"], inplace=True)
 
     def get_data(self, row):
         if isinstance(row, (int, np.int64)):
@@ -87,6 +83,7 @@ class Dataset:
             self.df.to_csv(self.df_file, index=False)
         print("created column", column_name)
 
+
 def filter_dataset(dataset: Dataset, df) -> Dataset:
     """
     Create a new Dataset object from another one with a df that only contains certain rows.
@@ -105,36 +102,48 @@ def filter_dataset(dataset: Dataset, df) -> Dataset:
     return new_dataset
 
 
-def get_dataset(model, ds_id, directory_var="WORKDIR", dataset_file="_dataset.nc") -> Tuple[Dataset, str]:
+def get_dataset(
+    model, ds_id, directory_var="WORK_DIR", dataset_file="_dataset.nc"
+) -> Tuple[Dataset, str]:
     """
     Load a dataset based on model and dataset ID from the environment directory.
-    
+
     Args:
         model: Model identifier string
         ds_id: Dataset identifier string
         directory_var: Name of the env. variable containing the directory
-        
+
     Returns:
         Tuple[Dataset, str]: A tuple containing the loaded Dataset object and the output directory path
     """
     load_dotenv()
     data_dir = os.getenv(directory_var)
+    data_dir = os.path.normpath(data_dir)
     output_dir = os.path.join(data_dir, "out")
-    ds = Dataset(os.path.join(data_dir, "data"), model, ds_id, dataset_file)
+    ds = Dataset(data_dir, model, ds_id, dataset_file)
     return ds, output_dir
 
 
 def expand_json_column(df, column, short_name=None, all_fields=False):
     """
-    Expand a column containing strings of JSON objects into multiple columns.
+    Expand a column containing JSON dicts as strings into multiple columns.
     """
     df = df.copy()
     if short_name is None:
         short_name = column
     df[short_name] = df[column].apply(json.loads)
-    if all_fields:
-        for field in df[short_name][0].keys():
-            df[f"{short_name}_{field}"] = df[short_name].apply(lambda x: x.get(field))
+    if all_fields and len(df) > 0:
+        # Collect all unique keys from all rows
+        all_keys = set()
+        for item in df[short_name]:
+            if isinstance(item, dict):
+                all_keys.update(item.keys())
+
+        # Create columns for all unique keys
+        for field in sorted(all_keys):
+            df[f"{short_name}_{field}"] = df[short_name].apply(
+                lambda x: x.get(field) if isinstance(x, dict) else None
+            )
 
     return df
 
@@ -183,7 +192,7 @@ def compute_metrics(row, data, start_frame, end_frame=-1, mode="old"):
         steady_state[1, :, :] = row["B"] / row["A"]
         u = data[:, 0, :, :]
         v = data[:, 1, :, :]
-        
+
     du_dt = np.gradient(u, frame_dt, axis=0)
     dv_dt = np.gradient(v, frame_dt, axis=0)
 
@@ -219,7 +228,9 @@ def get_metrics_array(dataset: Dataset, start_frame=0, metric="dev", mode="old")
     df, get_data = dataset.df, dataset.get_data
     all_metrics = []
     for _, row in df.iterrows():
-        metrics = compute_metrics(row, get_data(row), start_frame=start_frame, mode=mode)
+        metrics = compute_metrics(
+            row, get_data(row), start_frame=start_frame, mode=mode
+        )
         if metric == "dev":
             title = "Deviation"
             values = metrics[0]

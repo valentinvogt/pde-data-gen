@@ -44,6 +44,9 @@ def ic_from_dict(d: Dict, ic_type: str = None) -> InitialCondition:
     elif ic_type == "point_sources":
         return PointSourcesIC(**d)
     elif ic_type == "uniform":
+        if "v_min" not in d and "v_max" not in d:
+            d["v_min"] = d["u_min"]
+            d["v_max"] = d["u_max"]
         return UniformIC(**d)
     elif ic_type == "hex_pattern":
         return HexPatternIC(**d)
