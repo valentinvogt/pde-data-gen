@@ -1,6 +1,6 @@
 # PDE Data Generation
 
-Tools for generating and processing reaction-diffusion PDE simulation data.
+Tools for generating and processing reaction-diffusion PDE simulation data. This was created in the context of my Bachelor's thesis _Neural Operator Transfer Learning for Pattern Formation in Reaction-Diffusion Systems_.
 
 ## Setup
 
