@@ -20,4 +20,4 @@ pip install -e .
 ## Solvers
 There are two solvers to choose from:
 - `run_from_netcdf`, based on a [fork](https://github.com/valentinvogt/pde-solvers-cuda) of Louis Hurschler's [pde-solvers-cuda](https://github.com/LouisHurschler/pde-solvers-cuda). See `test/nc_pipeline.sh` for an example.
-- `ready`, using a fork (to be uploaded) of [Ready](https://https://github.com/GollyGang/ready). See `test/vti_pipeline.sh`.
+- `ready`, using a [fork](https://github.com/valentinvogt/ready) of [Ready](https://https://github.com/GollyGang/ready). See `test/vti_pipeline.sh`.
