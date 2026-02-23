@@ -30,6 +30,12 @@ class HexPatternIC(InitialCondition):
     wavelength: float
 
 
+class GaussianBlobIC(InitialCondition):
+    amplitude: float = 1.0
+    sigma: float = 10.0
+    n_blobs: int = 1
+
+
 def ic_from_dict(d: Dict, ic_type: str = None) -> InitialCondition:
     if type(d) is str:
         s_fixed = d.replace('""', '"')
@@ -50,6 +56,8 @@ def ic_from_dict(d: Dict, ic_type: str = None) -> InitialCondition:
         return UniformIC(**d)
     elif ic_type == "hex_pattern":
         return HexPatternIC(**d)
+    elif ic_type == "gaussian_blob":
+        return GaussianBlobIC(**d)
     else:
         raise ValueError(f"Unknown initial condition type: {ic_type}")
 
@@ -114,6 +122,19 @@ def vti_steady_state_plus_noise(
                 + np.cos(2 * np.pi * (np.arange(dims[0])[:, None] + np.arange(dims[1])[None, :]) / ic_params.wavelength)
             )
         )
+    elif isinstance(ic_params, GaussianBlobIC):
+        yi, xi = np.mgrid[0:dims[0], 0:dims[1]]
+        blob_u = np.zeros(dims)
+        blob_v = np.zeros(dims)
+        for _ in range(ic_params.n_blobs):
+            cx = rng.uniform(0, dims[1])
+            cy = rng.uniform(0, dims[0])
+            g = np.exp(-((xi - cx) ** 2 + (yi - cy) ** 2) / (2 * ic_params.sigma ** 2))
+            g = g[..., np.newaxis]
+            blob_u += ic_params.amplitude * g
+            blob_v += ic_params.amplitude * g
+        u += blob_u
+        v += blob_v
     else:
         print("unknown initial condition type, returning steady state without noise")
         u = A * np.ones(shape=dims)
@@ -156,6 +177,15 @@ def steady_state_plus_noise(
                 + np.cos(2 * np.pi * (x_position + y_position) / ic_params.wavelength)
             )
         )
+    elif isinstance(ic_params, GaussianBlobIC):
+        blob = np.zeros(x_position.shape)
+        for _ in range(ic_params.n_blobs):
+            cx = rng.uniform(x_position.min(), x_position.max())
+            cy = rng.uniform(y_position.min(), y_position.max())
+            g = np.exp(-((x_position - cx) ** 2 + (y_position - cy) ** 2) / (2 * ic_params.sigma ** 2))
+            blob += ic_params.amplitude * g
+        u += blob
+        v += blob
     else:
         print("initial_noisy_function is only meant for n_coupled == 2!")
         u = 0.0 * x_position
@@ -181,7 +211,7 @@ def get_ic_data_vti(
         )
     
 
-def get_ic_type(ic_params: InitialCondition) -> Literal["normal", "point_sources", "uniform", "hex_pattern"]:
+def get_ic_type(ic_params: InitialCondition) -> Literal["normal", "point_sources", "uniform", "hex_pattern", "gaussian_blob"]:
     if isinstance(ic_params, NormalIC):
         return "normal"
     elif isinstance(ic_params, PointSourcesIC):
@@ -190,5 +220,7 @@ def get_ic_type(ic_params: InitialCondition) -> Literal["normal", "point_sources
         return "uniform"
     elif isinstance(ic_params, HexPatternIC):
         return "hex_pattern"
+    elif isinstance(ic_params, GaussianBlobIC):
+        return "gaussian_blob"
     else:
         raise ValueError(f"Unknown initial condition type: {type(ic_params)}")

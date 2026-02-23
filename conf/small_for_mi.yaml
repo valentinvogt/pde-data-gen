@@ -1,0 +1,47 @@
+# Base configuration
+defaults:
+  - config
+  - _self_
+
+# Model configuration
+model: bruss  # bruss, gray_scott, fhn
+dataset_id: for_mi
+dataset_type: ball  # ball, multi_ic or all_fixed
+center_definition: from_df  # from_grid or from_df
+df_path: "data/centers.csv"  # Path to dataframe file with parameter points
+workdir_env_var: WORK_DIR # An environment variable of this name should exist
+use_vti: true
+# Grid configuration (used when center_definition is from_grid)
+# grid_mode: absolute  # absolute or relative
+# grid_params:
+#   # For absolute mode
+#   A: [2.0, 3.0]
+#   B: [4.5, 5.5]
+#   Du: [1.0, 2.0]
+#   Dv: [8.0, 10.0]
+#   # For relative mode
+#   B_over_A: [2.0, 3.0]
+#   Dv_over_Du: [8.0, 10.0]
+
+sim_params:
+  Nx: 64
+  dx: 1.0
+  Nt: 60_000
+  dt: 0.0025
+  n_snapshots: 100
+
+# Initial conditions (list of configurations)
+initial_conditions:
+  - type: gaussian_blob
+    amplitude: 0.5
+    sigma: 5.0
+    n_blobs: 3
+
+# Sampling parameters (for run_type: ball)
+sampling_std:
+  A: 0.1
+  B: 0.1
+  Du: 0.3
+  Dv: 0.3
+num_samples_per_ball: 1
+num_samples_per_ic: 1
